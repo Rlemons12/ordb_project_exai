@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import Flask, redirect
+from flask import Flask, render_template
 
 from app.blueprints import register_blueprints
 from app.models.configuration import configure_logging, get_exai_logger
@@ -23,12 +23,25 @@ def create_app() -> Flask:
 
     register_blueprints(app)
 
-    @app.route("/")
+    @app.route("/", methods=["GET"])
     def index():
         """
-        Send the browser to the Oracle AI chat page by default.
+        Render the main Oracle AI console landing page.
         """
-        return redirect("/oracle-ai/")
+        return render_template(
+            "index.html",
+            page_title="Oracle AI Console",
+            base_css_url="/oracle-ai/assets/css/base.css",
+            theme_css_url="/oracle-ai/assets/css/themes/theme-oracle-dark.css",
+            layout_css_url="/oracle-ai/assets/css/oracle_ai_layout.css",
+            home_url="/",
+            chat_url="/oracle-ai/chat",
+            audit_url="/oracle-ai/audit",
+            schema_summary_url="/oracle-ai/schema-summary",
+            health_url="/oracle-ai/health",
+            execution_mode="Demo Full Access",
+            theme_name="theme-oracle-dark",
+        )
 
     logger.info("Flask app created and blueprints registered.")
 
