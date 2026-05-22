@@ -1,11 +1,12 @@
 from __future__ import annotations
-
+import time
 import json
 import re
 from dataclasses import dataclass
 from typing import Any
 
-from app.models.configuration import get_exai_logger
+from app.models.configuration import get_exai_logger, get_request_id
+from app.models.service.oracle.ai_audit_service import OracleAIAuditService
 from app.models.configuration.oracle_config import get_oracle_config
 from app.models.service import OracleQueryResult, OracleQueryService, OracleSchemaService
 from app.models.service.ai import BaseAIProvider, OpenAIAIProvider
