@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>{{ page_title | default("Oracle AI Demo") }}</title>
+
+    {% if base_css_url %}
+        <link rel="stylesheet" href="{{ base_css_url }}">
+    {% endif %}
+
+    {% if theme_css_url %}
+        <link rel="stylesheet" href="{{ theme_css_url }}">
+    {% endif %}
+
+    {% if layout_css_url %}
+        <link rel="stylesheet" href="{{ layout_css_url }}">
+    {% endif %}
+
+    {% if page_css_url %}
+        <link rel="stylesheet" href="{{ page_css_url }}">
+    {% endif %}
+
+    {% if css_url %}
+        <link rel="stylesheet" href="{{ css_url }}">
+    {% endif %}
+
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="{% block body_class %}oracle-ai-body {{ theme_name | default('theme-oracle-dark') }}{% endblock %}">
+
+    {% block body %}{% endblock %}
+
+    {% block page_config %}{% endblock %}
+
+    {% if layout_js_url %}
+        <script src="{{ layout_js_url }}"></script>
+    {% endif %}
+
+    {% if js_url %}
+        <script src="{{ js_url }}"></script>
+    {% endif %}
+
+    {% if page_js_url %}
+        <script src="{{ page_js_url }}"></script>
+    {% endif %}
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
