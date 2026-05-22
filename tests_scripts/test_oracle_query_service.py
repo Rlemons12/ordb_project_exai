@@ -1,0 +1,246 @@
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+
+# ------------------------------------------------------------
+# Add project root to sys.path BEFORE importing from app.
+# ------------------------------------------------------------
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+
+from app.models.service import OracleQueryService, OracleSchemaService
+
+
+TEST_OWNER = "DEVUSER"
+TEST_TABLE = "AI_TEST_LOG"
+
+
+def print_section(title: str) -> None:
+    print("\n" + "=" * 80)
+    print(title)
+    print("=" * 80)
+
+
+def table_exists(
+    query_service: OracleQueryService,
+    table_name: str,
+    owner: str = TEST_OWNER,
+) -> bool:
+    """
+    Check whether a table exists before attempting DROP TABLE.
+
+    This prevents expected ORA-00942 cleanup noise when the table
+    does not exist yet.
+    """
+    result = query_service.run_select(
+        """
+        SELECT
+            table_name
+        FROM all_tables
+        WHERE owner = UPPER(:owner)
+          AND table_name = UPPER(:table_name)
+        """,
+        binds={
+            "owner": owner,
+            "table_name": table_name,
+        },
+        max_rows=1,
+    )
+
+    return result.success and result.row_count > 0
+
+
+def drop_table_if_exists(
+    query_service: OracleQueryService,
+    table_name: str,
+    owner: str = TEST_OWNER,
+) -> None:
+    """
+    Drop a table only if it exists.
+
+    This avoids intentionally triggering ORA-00942 during test cleanup.
+    """
+    if not table_exists(
+        query_service=query_service,
+        table_name=table_name,
+        owner=owner,
+    ):
+        print(f"Cleanup: {owner}.{table_name} does not exist. Nothing to drop.")
+        return
+
+    result = query_service.run_sql(f"DROP TABLE {owner}.{table_name} PURGE")
+
+    print("Cleanup drop success:", result.success)
+    print("Cleanup drop message:", result.message)
+
+    if not result.success:
+        print("Cleanup drop error:", result.error)
+
+
+def test_colour_select(query_service: OracleQueryService) -> None:
+    print_section("Test 1: SELECT from DEVUSER.COLOUR")
+
+    result = query_service.run_sql("SELECT * FROM DEVUSER.COLOUR")
+
+    print("Success:", result.success)
+    print("Message:", result.message)
+    print("Rows:", result.rows)
+
+    if not result.success:
+        print("Error:", result.error)
+
+
+def test_quoted_table_select(query_service: OracleQueryService) -> None:
+    print_section('Test 2: SELECT from "DEVUSER"."My Favorite saying"')
+
+    result = query_service.run_sql(
+        'SELECT * FROM "DEVUSER"."My Favorite saying"'
+    )
+
+    print("Success:", result.success)
+    print("Message:", result.message)
+    print("Rows:", result.rows)
+
+    if not result.success:
+        print("Error:", result.error)
+
+
+def test_colour_schema(schema_service: OracleSchemaService) -> None:
+    print_section("Test 3: Describe DEVUSER.COLOUR")
+
+    result = schema_service.describe_table(
+        table_name="COLOUR",
+        owner="DEVUSER",
+    )
+
+    print("Success:", result.success)
+    print("Message:", result.message)
+    print("Columns:", result.rows)
+
+    if not result.success:
+        print("Error:", result.error)
+
+
+def test_quoted_table_schema(schema_service: OracleSchemaService) -> None:
+    print_section('Test 4: Describe "DEVUSER"."My Favorite saying"')
+
+    result = schema_service.describe_table(
+        table_name="My Favorite saying",
+        owner="DEVUSER",
+    )
+
+    print("Success:", result.success)
+    print("Message:", result.message)
+    print("Columns:", result.rows)
+
+    if not result.success:
+        print("Error:", result.error)
+
+
+def test_schema_summary(schema_service: OracleSchemaService) -> None:
+    print_section("Test 5: Build DEVUSER schema summary")
+
+    summary = schema_service.build_schema_summary(
+        owner="DEVUSER",
+        max_tables=20,
+        include_sample_rows=True,
+        sample_row_count=3,
+    )
+
+    print("Success:", summary.get("success"))
+    print("Owner filter:", summary.get("owner_filter"))
+    print("Table count:", summary.get("table_count"))
+    print("Error:", summary.get("error"))
+
+    for table in summary.get("tables", []):
+        print("\nTable:", table.get("table_name"))
+        print("Actual row count:", table.get("actual_row_count"))
+        print("Column count:", len(table.get("columns", [])))
+        print("Primary keys:", table.get("primary_keys"))
+        print("Sample rows:", table.get("sample_rows"))
+
+
+def test_full_access_create_insert_select_drop(
+    query_service: OracleQueryService,
+) -> None:
+    print_section("Test 6: Full-access CREATE / INSERT / SELECT / DROP")
+
+    drop_table_if_exists(
+        query_service=query_service,
+        table_name=TEST_TABLE,
+        owner=TEST_OWNER,
+    )
+
+    create_result = query_service.run_sql(
+        f"""
+        CREATE TABLE {TEST_OWNER}.{TEST_TABLE} (
+            ID NUMBER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+            NOTE VARCHAR2(200),
+            CREATED_AT TIMESTAMP DEFAULT SYSTIMESTAMP
+        )
+        """
+    )
+
+    print("Create success:", create_result.success)
+    print("Create message:", create_result.message)
+
+    if not create_result.success:
+        print("Create error:", create_result.error)
+        return
+
+    insert_result = query_service.run_sql(
+        f"INSERT INTO {TEST_OWNER}.{TEST_TABLE} (NOTE) VALUES (:note)",
+        binds={
+            "note": "Reusable tests_scripts full-access test row",
+        },
+    )
+
+    print("Insert success:", insert_result.success)
+    print("Insert message:", insert_result.message)
+
+    if not insert_result.success:
+        print("Insert error:", insert_result.error)
+
+    select_result = query_service.run_sql(
+        f"SELECT * FROM {TEST_OWNER}.{TEST_TABLE}"
+    )
+
+    print("Select success:", select_result.success)
+    print("Select message:", select_result.message)
+    print("Select rows:", select_result.rows)
+
+    if not select_result.success:
+        print("Select error:", select_result.error)
+
+    drop_result = query_service.run_sql(
+        f"DROP TABLE {TEST_OWNER}.{TEST_TABLE} PURGE"
+    )
+
+    print("Drop success:", drop_result.success)
+    print("Drop message:", drop_result.message)
+
+    if not drop_result.success:
+        print("Drop error:", drop_result.error)
+
+
+def main() -> None:
+    query_service = OracleQueryService()
+    schema_service = OracleSchemaService()
+
+    test_colour_select(query_service)
+    test_quoted_table_select(query_service)
+    test_colour_schema(schema_service)
+    test_quoted_table_schema(schema_service)
+    test_schema_summary(schema_service)
+    test_full_access_create_insert_select_drop(query_service)
+
+    print_section("All Oracle service tests completed")
+
+
+if __name__ == "__main__":
+    main()

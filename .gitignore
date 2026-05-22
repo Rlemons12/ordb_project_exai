@@ -1,0 +1,183 @@
+# ============================================================
+# Python
+# ============================================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.cache/
+
+# ============================================================
+# Virtual Environments
+# ============================================================
+
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ============================================================
+# Environment / Secrets
+# ============================================================
+
+.env
+.env.*
+!.env.example
+
+# ============================================================
+# API Keys / Local Secret Dumps
+# ============================================================
+
+secrets/
+*.secret
+*.secrets
+*.key
+*.pem
+*.p12
+*.pfx
+
+# ============================================================
+# IDE / Editor
+# ============================================================
+
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ============================================================
+# Logs
+# ============================================================
+
+logs/
+*.log
+*.log.*
+debug.log
+
+# Keep this only if you ever want an empty logs folder committed.
+# !logs/.gitkeep
+
+# ============================================================
+# Backups Created by Local Installer Scripts
+# ============================================================
+
+backups/
+*_backup_*/
+*.bak
+*.backup
+
+# ============================================================
+# Build / Packaging
+# ============================================================
+
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# ============================================================
+# Local Zip Packages / Downloaded Install Bundles
+# ============================================================
+
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+
+# If you intentionally want to commit a specific zip, unignore it here.
+# !some_required_package.zip
+
+# ============================================================
+# Test / Temporary Output
+# ============================================================
+
+tmp/
+temp/
+.tmp/
+*.tmp
+test_output/
+test-results/
+coverage/
+
+# ============================================================
+# Oracle / SQLcl / Local Database Artifacts
+# ============================================================
+
+*.dmp
+*.dpd
+*.trc
+*.trm
+*.ora.bak
+*.sql.log
+*.lst
+spool/
+sqlcl-history/
+.history
+
+# ============================================================
+# Oracle SQLcl / SQL Developer / Local Tool State
+# ============================================================
+
+.dbtools/
+sqldeveloper/
+system_cache/
+product.conf
+
+# ============================================================
+# Oracle Data Modeler Local Generated Output
+# ============================================================
+
+database_design/exports/
+database_design/generated/
+database_design/tmp/
+database_design/temp/
+
+# Do NOT ignore these if you want to version database design.
+# database_design/models/
+# database_design/ddl/
+# database_design/diagrams/
+
+# ============================================================
+# Local Exports / Generated Reports
+# ============================================================
+
+exports/
+reports/
+generated/
+output/
+
+# ============================================================
+# Local Runtime Files
+# ============================================================
+
+*.pid
+*.lock
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+
+# ============================================================
+# OS Files
+# ============================================================
+
+desktop.ini
+ehthumbs.db
+Icon?
