@@ -16,7 +16,15 @@ from app.models.service.oracle.query_service import (
     OracleSqlCommandType,
 )
 
+from app.models.service.oracle.ai_audit_service import (
+    AIAuditCreateResult,
+    OracleAIAuditService,
+)
+
+
 __all__ = [
+    "AIAuditCreateResult",
+    "OracleAIAuditService",
     "OracleConnectionService",
     "OracleConnectionServiceError",
     "OracleQueryResult",
