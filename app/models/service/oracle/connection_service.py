@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import base64
 import logging
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Any, Generator, Optional
 
 import oracledb
@@ -34,13 +37,98 @@ class OracleQueryResult:
     error: Optional[str] = None
 
 
+def make_oracle_value_json_safe(value: Any) -> Any:
+    """
+    Convert Oracle-returned values into JSON-safe Python values.
+
+    This must run while the Oracle connection is still open because Oracle
+    LOB values require an active connection to be read.
+
+    Handles:
+        - CLOB / NCLOB
+        - BLOB / RAW bytes
+        - TIMESTAMP / DATE
+        - Decimal
+        - Nested dict/list values if they ever appear
+    """
+    if value is None:
+        return None
+
+    if isinstance(value, dict):
+        return {
+            str(key): make_oracle_value_json_safe(inner_value)
+            for key, inner_value in value.items()
+        }
+
+    if isinstance(value, list):
+        return [
+            make_oracle_value_json_safe(inner_value)
+            for inner_value in value
+        ]
+
+    if isinstance(value, tuple):
+        return [
+            make_oracle_value_json_safe(inner_value)
+            for inner_value in value
+        ]
+
+    # Oracle CLOB/BLOB objects expose read().
+    # This needs to happen before the connection is closed.
+    if hasattr(value, "read") and callable(value.read):
+        try:
+            lob_value = value.read()
+        except Exception as exc:
+            logger.warning(
+                "Failed to read Oracle LOB value before connection close. type=%s error=%s",
+                type(value).__name__,
+                exc,
+            )
+            return f"[Unreadable Oracle LOB: {type(value).__name__}]"
+
+        return make_oracle_value_json_safe(lob_value)
+
+    if isinstance(value, datetime):
+        return value.isoformat()
+
+    if isinstance(value, date):
+        return value.isoformat()
+
+    if isinstance(value, Decimal):
+        if value == value.to_integral_value():
+            return int(value)
+        return float(value)
+
+    if isinstance(value, bytes):
+        return base64.b64encode(value).decode("ascii")
+
+    return value
+
+
+def make_oracle_row_json_safe(
+    columns: list[str],
+    row: tuple[Any, ...],
+) -> dict[str, Any]:
+    """
+    Convert one Oracle result row into a JSON-safe dictionary.
+
+    This is intentionally separate from execute_query() so it can be unit
+    tested later without needing a live Oracle database.
+    """
+    row_dict: dict[str, Any] = {}
+
+    for column_name, value in zip(columns, row):
+        row_dict[column_name] = make_oracle_value_json_safe(value)
+
+    return row_dict
+
+
 class OracleConnectionService:
     """
     Handles direct Python access to the Oracle demo database.
 
     This service is intentionally separated from the AI/orchestrator layer.
 
-    Later flow:
+    Flow:
 
         User question
             -> Coordinator
@@ -111,6 +199,13 @@ class OracleConnectionService:
         """
         Execute a SELECT-style SQL query and return rows as dictionaries.
 
+        Important:
+            All row values are converted to JSON-safe Python values before the
+            database connection closes. This prevents Oracle LOB objects from
+            escaping the connection lifecycle and later failing with:
+
+                DPY-1001: not connected to database
+
         Args:
             sql:
                 SQL query to execute.
@@ -153,7 +248,7 @@ class OracleConnectionService:
                     fetched_rows = cursor.fetchmany(max_rows)
 
                     rows = [
-                        dict(zip(columns, row))
+                        make_oracle_row_json_safe(columns, row)
                         for row in fetched_rows
                     ]
 
@@ -163,7 +258,10 @@ class OracleConnectionService:
                         columns=columns,
                         rows=rows,
                         row_count=len(rows),
-                        message=f"Query executed successfully. Returned {len(rows)} row(s).",
+                        message=(
+                            f"Query executed successfully. "
+                            f"Returned {len(rows)} row(s)."
+                        ),
                     )
 
         except Exception as exc:
