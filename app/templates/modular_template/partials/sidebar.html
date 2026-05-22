@@ -1,0 +1,61 @@
+<div class="oracle-sidebar-brand">
+    <div class="oracle-sidebar-logo">
+        AI
+    </div>
+
+    <div class="oracle-sidebar-brand-text">
+        <h2>Oracle AI</h2>
+        <p>Demo Console</p>
+    </div>
+</div>
+
+<nav class="oracle-sidebar-nav">
+    <a
+        class="oracle-sidebar-link"
+        href="{{ home_url | default('/') }}"
+    >
+        <span class="oracle-sidebar-link-title">Home</span>
+        <span class="oracle-sidebar-link-subtitle">Oracle AI console</span>
+    </a>
+
+    <a
+        class="oracle-sidebar-link"
+        href="{{ chat_url | default('/oracle-ai/chat') }}"
+    >
+        <span class="oracle-sidebar-link-title">Chat</span>
+        <span class="oracle-sidebar-link-subtitle">Ask database questions</span>
+    </a>
+
+    <a
+        class="oracle-sidebar-link"
+        href="{{ audit_url | default('/oracle-ai/audit') }}"
+    >
+        <span class="oracle-sidebar-link-title">AI Request Audit</span>
+        <span class="oracle-sidebar-link-subtitle">Review generated SQL</span>
+    </a>
+
+    <a
+        class="oracle-sidebar-link"
+        href="{{ schema_summary_url | default('/oracle-ai/schema-summary') }}"
+        target="_blank"
+        rel="noopener"
+    >
+        <span class="oracle-sidebar-link-title">Schema Summary</span>
+        <span class="oracle-sidebar-link-subtitle">View schema JSON</span>
+    </a>
+
+    <a
+        class="oracle-sidebar-link"
+        href="{{ health_url | default('/oracle-ai/health') }}"
+        target="_blank"
+        rel="noopener"
+    >
+        <span class="oracle-sidebar-link-title">Health</span>
+        <span class="oracle-sidebar-link-subtitle">Check blueprint status</span>
+    </a>
+</nav>
+
+<div class="oracle-sidebar-footer">
+    <span>Execution Mode</span>
+    <strong>{{ execution_mode | default("Demo Full Access") }}</strong>
+</div>

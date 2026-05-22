@@ -1,0 +1,425 @@
+/* ==========================================================================
+   Oracle AI Demo - Base CSS
+   --------------------------------------------------------------------------
+   Purpose:
+   - Global reset
+   - Global design tokens
+   - Theme variables
+   - Shared typography
+   - Shared buttons/forms/utilities
+   - Future theme support
+
+   Page/layout CSS files should use these variables instead of redefining
+   colors and spacing everywhere.
+   ========================================================================== */
+
+
+/* ==========================================================================
+   1. Global reset
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    min-height: 100%;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    min-height: 100%;
+    margin: 0;
+}
+
+img,
+picture,
+svg,
+canvas,
+video {
+    display: block;
+    max-width: 100%;
+}
+
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+a {
+    color: inherit;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+pre,
+code {
+    font-family: Consolas, Monaco, "Courier New", monospace;
+}
+
+
+/* ==========================================================================
+   2. Base design tokens
+   ========================================================================== */
+
+:root {
+    /*
+       Core palette
+    */
+    --color-bg: #050505;
+    --color-bg-soft: #0c0c0c;
+    --color-panel: #111111;
+    --color-panel-soft: #191919;
+    --color-panel-raised: #1f1f1f;
+
+    --color-text: #f2f2f2;
+    --color-text-soft: #d8d8d8;
+    --color-muted: #b8b8b8;
+    --color-muted-dark: #7a7a7a;
+
+    --color-border: #2f6f35;
+    --color-border-soft: #244927;
+
+    --color-accent: #ffc857;
+    --color-accent-soft: rgba(255, 200, 87, 0.18);
+
+    --color-good: #37b26c;
+    --color-warning: #d6a534;
+    --color-danger: #d9534f;
+    --color-info: #4aa3df;
+    --color-unknown: #8a8a8a;
+
+    /*
+       Semantic aliases
+    */
+    --page-bg: var(--color-bg);
+    --sidebar-bg: var(--color-bg-soft);
+    --panel-bg: var(--color-panel);
+    --panel-bg-soft: var(--color-panel-soft);
+    --text-main: var(--color-text);
+    --text-muted: var(--color-muted);
+    --border-main: var(--color-border);
+    --border-soft: var(--color-border-soft);
+    --accent-main: var(--color-accent);
+
+    /*
+       Sizing
+    */
+    --sidebar-width: 280px;
+    --page-padding: 22px;
+    --panel-padding: 18px;
+
+    /*
+       Radius
+    */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+
+    /*
+       Shadows
+    */
+    --shadow-soft: 0 0 18px rgba(47, 111, 53, 0.22);
+    --shadow-panel: 0 10px 30px rgba(0, 0, 0, 0.35);
+
+    /*
+       Typography
+    */
+    --font-main: Arial, Helvetica, sans-serif;
+    --font-mono: Consolas, Monaco, "Courier New", monospace;
+
+    /*
+       Motion
+    */
+    --transition-fast: 120ms ease-in-out;
+    --transition-normal: 180ms ease-in-out;
+}
+
+
+/* ==========================================================================
+   3. Theme: default Oracle dark
+   ========================================================================== */
+
+.theme-oracle-dark {
+    --color-bg: #050505;
+    --color-bg-soft: #0c0c0c;
+    --color-panel: #111111;
+    --color-panel-soft: #191919;
+    --color-panel-raised: #1f1f1f;
+
+    --color-text: #f2f2f2;
+    --color-text-soft: #d8d8d8;
+    --color-muted: #b8b8b8;
+    --color-muted-dark: #7a7a7a;
+
+    --color-border: #2f6f35;
+    --color-border-soft: #244927;
+
+    --color-accent: #ffc857;
+    --color-accent-soft: rgba(255, 200, 87, 0.18);
+
+    --shadow-soft: 0 0 18px rgba(47, 111, 53, 0.22);
+}
+
+
+/* ==========================================================================
+   4. Theme: Hephaestus forge
+   --------------------------------------------------------------------------
+   This is ready for later. Use:
+       <body class="oracle-ai-body theme-hephaestus">
+   ========================================================================== */
+
+.theme-hephaestus {
+    --color-bg: #080604;
+    --color-bg-soft: #120d08;
+    --color-panel: #18110b;
+    --color-panel-soft: #24170e;
+    --color-panel-raised: #2f1c10;
+
+    --color-text: #f7efe4;
+    --color-text-soft: #ead6bd;
+    --color-muted: #c6a987;
+    --color-muted-dark: #876c4d;
+
+    --color-border: #9a4f18;
+    --color-border-soft: #5e3215;
+
+    --color-accent: #ffb347;
+    --color-accent-soft: rgba(255, 112, 35, 0.2);
+
+    --color-good: #61b15a;
+    --color-warning: #e0a13a;
+    --color-danger: #d24b2a;
+    --color-info: #c97842;
+
+    --shadow-soft: 0 0 22px rgba(255, 112, 35, 0.24);
+}
+
+
+/* ==========================================================================
+   5. Base body styling
+   ========================================================================== */
+
+body.oracle-ai-body {
+    background: var(--page-bg);
+    color: var(--text-main);
+    font-family: var(--font-main);
+    line-height: 1.45;
+}
+
+body.oracle-ai-body::selection {
+    background: var(--accent-main);
+    color: #111111;
+}
+
+
+/* ==========================================================================
+   6. Shared links and buttons
+   ========================================================================== */
+
+.oracle-link-button,
+.oracle-primary-button,
+.oracle-secondary-button,
+.page-link-button,
+.page-primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    min-height: 40px;
+    padding: 10px 14px;
+
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-md);
+
+    background: var(--panel-bg-soft);
+    color: var(--text-main);
+
+    text-decoration: none;
+    font-weight: 700;
+
+    transition:
+        border-color var(--transition-fast),
+        background-color var(--transition-fast),
+        transform var(--transition-fast);
+}
+
+.oracle-link-button:hover,
+.oracle-primary-button:hover,
+.oracle-secondary-button:hover,
+.page-link-button:hover,
+.page-primary-button:hover {
+    border-color: var(--accent-main);
+    background: var(--color-panel-raised);
+}
+
+.oracle-link-button:active,
+.oracle-primary-button:active,
+.oracle-secondary-button:active,
+.page-link-button:active,
+.page-primary-button:active {
+    transform: translateY(1px);
+}
+
+.oracle-primary-button,
+.page-primary-button {
+    border-color: var(--accent-main);
+    color: #111111;
+    background: var(--accent-main);
+}
+
+.oracle-primary-button:hover,
+.page-primary-button:hover {
+    background: #ffd579;
+    color: #111111;
+}
+
+
+/* ==========================================================================
+   7. Shared form controls
+   ========================================================================== */
+
+.oracle-input,
+.oracle-select,
+.oracle-textarea,
+input[type="text"],
+input[type="number"],
+input[type="search"],
+select,
+textarea {
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    background: #080808;
+    color: var(--text-main);
+    padding: 9px 10px;
+}
+
+.oracle-input:focus,
+.oracle-select:focus,
+.oracle-textarea:focus,
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+select:focus,
+textarea:focus {
+    outline: 2px solid var(--accent-main);
+    outline-offset: 2px;
+}
+
+label {
+    color: var(--text-muted);
+}
+
+
+/* ==========================================================================
+   8. Shared cards and panels
+   ========================================================================== */
+
+.oracle-panel {
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    background: var(--panel-bg);
+    box-shadow: var(--shadow-panel);
+}
+
+.oracle-panel-soft {
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    background: var(--panel-bg-soft);
+}
+
+
+/* ==========================================================================
+   9. Shared status pills
+   ========================================================================== */
+
+.status-pill {
+    display: inline-block;
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.status-good {
+    color: #071d0f;
+    background: var(--color-good);
+}
+
+.status-warning {
+    color: #1d1404;
+    background: var(--color-warning);
+}
+
+.status-bad {
+    color: #2b0505;
+    background: var(--color-danger);
+}
+
+.status-info {
+    color: #041522;
+    background: var(--color-info);
+}
+
+.status-unknown {
+    color: #111111;
+    background: var(--color-unknown);
+}
+
+
+/* ==========================================================================
+   10. Shared utility classes
+   ========================================================================== */
+
+.hidden {
+    display: none !important;
+}
+
+.muted {
+    color: var(--text-muted);
+}
+
+.monospace {
+    font-family: var(--font-mono);
+}
+
+.text-danger {
+    color: var(--color-danger);
+}
+
+.text-good {
+    color: var(--color-good);
+}
+
+.text-warning {
+    color: var(--color-warning);
+}
+
+.text-accent {
+    color: var(--accent-main);
+}
+
+.preview-cell {
+    max-width: 320px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.empty-cell,
+.audit-empty-cell {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 28px;
+}

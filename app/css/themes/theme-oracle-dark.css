@@ -1,0 +1,312 @@
+/* ==========================================================================
+   Oracle AI Demo - Theme: Oracle Dark
+   --------------------------------------------------------------------------
+   Purpose:
+   - Controls the Oracle Dark visual theme only
+   - Colors
+   - Backgrounds
+   - Borders
+   - Shadows
+   - Accent glow
+   - Theme-level sizing tokens
+
+   This file should be loaded after base.css and before layout/page CSS.
+
+   Recommended load order:
+       base.css
+       themes/theme-oracle-dark.css
+       oracle_ai_layout.css
+       page-specific css
+   ========================================================================== */
+
+
+/* ==========================================================================
+   Theme class
+   --------------------------------------------------------------------------
+   Apply with:
+       <body class="oracle-ai-body theme-oracle-dark">
+   ========================================================================== */
+
+.theme-oracle-dark {
+    /*
+       Core palette
+       Based on the original EXAI dark/amber look.
+    */
+    --color-bg: #070707;
+    --color-bg-soft: #0c0c0c;
+
+    --color-panel: #111111;
+    --color-panel-soft: #191919;
+    --color-panel-raised: #202020;
+
+    --color-code-bg: #050505;
+
+    --color-text: #f4f4f4;
+    --color-text-soft: #dfdfdf;
+    --color-muted: #b8b8b8;
+    --color-muted-dark: #777777;
+
+    --color-border: #2c2c2c;
+    --color-border-soft: #2c2c2c;
+    --color-border-strong: #4c3518;
+
+    --color-accent: #f0b44c;
+    --color-accent-strong: #ffca63;
+    --color-accent-soft: rgba(240, 180, 76, 0.12);
+
+    --color-danger: #e95d5d;
+    --color-danger-soft: rgba(233, 93, 93, 0.12);
+
+    --color-good: #47c275;
+    --color-good-soft: rgba(71, 194, 117, 0.12);
+
+    --color-warning: #f0b44c;
+    --color-warning-soft: rgba(240, 180, 76, 0.12);
+
+    --color-info: #d9e8ff;
+    --color-info-soft: rgba(217, 232, 255, 0.12);
+
+    --color-unknown: #8a8a8a;
+
+    /*
+       Semantic aliases used by reusable layout/page CSS.
+    */
+    --page-bg: var(--color-bg);
+    --page-background:
+        radial-gradient(circle at top left, rgba(240, 180, 76, 0.12), transparent 28rem),
+        linear-gradient(135deg, #050505 0%, #101010 60%, #16110a 100%);
+
+    --sidebar-bg: #070707;
+    --sidebar-background:
+        linear-gradient(180deg, #070707 0%, #0c0c0c 55%, #090705 100%);
+
+    --panel-bg: rgba(17, 17, 17, 0.92);
+    --panel-bg-solid: var(--color-panel);
+    --panel-bg-soft: var(--color-panel-soft);
+    --panel-bg-raised: var(--color-panel-raised);
+
+    --header-background:
+        linear-gradient(135deg, rgba(17, 17, 17, 0.96), rgba(25, 25, 25, 0.92));
+
+    --card-background: rgba(17, 17, 17, 0.92);
+    --card-background-soft: rgba(25, 25, 25, 0.92);
+
+    --input-bg: #050505;
+    --code-bg: var(--color-code-bg);
+
+    --text-main: var(--color-text);
+    --text-soft: var(--color-text-soft);
+    --text-muted: var(--color-muted);
+    --text-inverted: #171008;
+
+    --border-main: var(--color-border);
+    --border-soft: var(--color-border-soft);
+    --border-strong: var(--color-border-strong);
+
+    --accent-main: var(--color-accent);
+    --accent-strong: var(--color-accent-strong);
+    --accent-soft: var(--color-accent-soft);
+
+    /*
+       Effects.
+    */
+    --shadow-soft: 0 16px 40px rgba(0, 0, 0, 0.35);
+    --shadow-panel: 0 20px 60px rgba(0, 0, 0, 0.35);
+    --shadow-accent: 0 0 18px rgba(240, 180, 76, 0.7);
+    --shadow-danger: 0 0 18px rgba(233, 93, 93, 0.55);
+    --shadow-good: 0 0 18px rgba(71, 194, 117, 0.55);
+
+    /*
+       Layout sizing tokens.
+       These are theme-adjustable values, but the actual layout rules stay in
+       oracle_ai_layout.css.
+    */
+    --sidebar-width: 280px;
+    --sidebar-collapsed-width: 76px;
+    --page-padding: 28px;
+    --panel-padding: 20px;
+
+    /*
+       Radius.
+    */
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+    --radius-xl: 22px;
+
+    /*
+       Typography.
+    */
+    --font-main: Arial, Helvetica, sans-serif;
+    --font-mono: Consolas, Monaco, "Courier New", monospace;
+
+    /*
+       Motion.
+    */
+    --transition-fast: 120ms ease-in-out;
+    --transition-normal: 180ms ease-in-out;
+}
+
+
+/* ==========================================================================
+   Theme-level base styling
+   ========================================================================== */
+
+body.theme-oracle-dark {
+    background: var(--page-background);
+    color: var(--text-main);
+}
+
+body.theme-oracle-dark::selection {
+    background: var(--accent-strong);
+    color: var(--text-inverted);
+}
+
+
+/* ==========================================================================
+   Theme-level shared component styling
+   --------------------------------------------------------------------------
+   These selectors are visual only. Layout structure remains in layout/page CSS.
+   ========================================================================== */
+
+body.theme-oracle-dark .oracle-panel,
+body.theme-oracle-dark .oracle-content-card,
+body.theme-oracle-dark .exai-card {
+    background: var(--card-background);
+    border-color: var(--border-main);
+    box-shadow: var(--shadow-panel);
+}
+
+body.theme-oracle-dark .oracle-panel-soft,
+body.theme-oracle-dark .oracle-content-card-soft {
+    background: var(--card-background-soft);
+    border-color: var(--border-main);
+}
+
+body.theme-oracle-dark .oracle-main-header {
+    background: var(--header-background);
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-soft);
+}
+
+body.theme-oracle-dark .oracle-sidebar-container {
+    background: var(--sidebar-background);
+    border-color: var(--border-main);
+}
+
+body.theme-oracle-dark .oracle-sidebar-brand,
+body.theme-oracle-dark .oracle-sidebar-link,
+body.theme-oracle-dark .oracle-sidebar-footer {
+    background: var(--panel-bg);
+    border-color: var(--border-main);
+}
+
+body.theme-oracle-dark .oracle-sidebar-link:hover,
+body.theme-oracle-dark .oracle-sidebar-link.is-active,
+body.theme-oracle-dark .oracle-sidebar-link[aria-current="page"] {
+    border-color: var(--accent-main);
+    background: rgba(240, 180, 76, 0.1);
+}
+
+body.theme-oracle-dark .oracle-sidebar-logo {
+    background: linear-gradient(135deg, var(--accent-main), var(--accent-strong));
+    color: var(--text-inverted);
+    box-shadow: var(--shadow-accent);
+}
+
+body.theme-oracle-dark .oracle-main-eyebrow,
+body.theme-oracle-dark .exai-kicker {
+    color: var(--accent-main);
+}
+
+body.theme-oracle-dark .oracle-primary-button,
+body.theme-oracle-dark .page-primary-button,
+body.theme-oracle-dark .exai-primary-button {
+    background: linear-gradient(135deg, var(--accent-main), var(--accent-strong));
+    color: var(--text-inverted);
+    border-color: var(--accent-main);
+}
+
+body.theme-oracle-dark .oracle-primary-button:hover,
+body.theme-oracle-dark .page-primary-button:hover,
+body.theme-oracle-dark .exai-primary-button:hover {
+    border-color: var(--accent-strong);
+    filter: brightness(1.04);
+}
+
+body.theme-oracle-dark .oracle-secondary-button,
+body.theme-oracle-dark .oracle-link-button,
+body.theme-oracle-dark .page-link-button,
+body.theme-oracle-dark .exai-secondary-button {
+    background: var(--panel-bg-soft);
+    color: var(--text-main);
+    border-color: var(--border-main);
+}
+
+body.theme-oracle-dark .oracle-secondary-button:hover,
+body.theme-oracle-dark .oracle-link-button:hover,
+body.theme-oracle-dark .page-link-button:hover,
+body.theme-oracle-dark .exai-secondary-button:hover {
+    border-color: var(--accent-main);
+    background: var(--panel-bg-raised);
+}
+
+body.theme-oracle-dark input,
+body.theme-oracle-dark textarea,
+body.theme-oracle-dark select {
+    background: var(--input-bg);
+    color: var(--text-main);
+    border-color: var(--border-main);
+}
+
+body.theme-oracle-dark input:focus,
+body.theme-oracle-dark textarea:focus,
+body.theme-oracle-dark select:focus {
+    border-color: var(--accent-main);
+    box-shadow: 0 0 0 3px rgba(240, 180, 76, 0.15);
+}
+
+body.theme-oracle-dark code,
+body.theme-oracle-dark pre,
+body.theme-oracle-dark .exai-sql,
+body.theme-oracle-dark .exai-pre {
+    background: var(--code-bg);
+    border-color: var(--border-strong);
+}
+
+body.theme-oracle-dark .exai-sql {
+    color: #f9e2b3;
+}
+
+body.theme-oracle-dark .exai-pre {
+    color: #d9e8ff;
+}
+
+
+/* ==========================================================================
+   Theme-level status colors
+   ========================================================================== */
+
+body.theme-oracle-dark .status-good,
+body.theme-oracle-dark .exai-status-dot.good {
+    background: var(--color-good);
+    box-shadow: var(--shadow-good);
+}
+
+body.theme-oracle-dark .status-bad,
+body.theme-oracle-dark .exai-status-dot.bad {
+    background: var(--color-danger);
+    box-shadow: var(--shadow-danger);
+}
+
+body.theme-oracle-dark .status-warning {
+    background: var(--color-warning);
+}
+
+body.theme-oracle-dark .status-info {
+    background: var(--color-info);
+}
+
+body.theme-oracle-dark .status-unknown {
+    background: var(--color-unknown);
+}
