@@ -17,6 +17,50 @@ _SIMPLE_ORACLE_IDENTIFIER_RE = re.compile(r"^[A-Z][A-Z0-9_$#]*$")
 
 
 @dataclass(frozen=True)
+class OracleIndexDefinition:
+    """
+    Source-of-truth definition for one Oracle index managed by this registry.
+    """
+
+    name: str
+    create_sql_template: str
+    description: str = ""
+
+    @property
+    def dictionary_name(self) -> str:
+        """
+        Oracle stores normal unquoted index names uppercase.
+        """
+        return self.name.upper()
+
+    def sql_name(self, owner: str | None = None) -> str:
+        """
+        Render the index name for Oracle SQL.
+
+        Examples:
+            "IDX_AI_AUDIT_CREATED_AT"
+            "DEVUSER"."IDX_AI_AUDIT_CREATED_AT"
+        """
+        index_part = render_oracle_identifier(self.name)
+
+        if not owner:
+            return index_part
+
+        owner_part = render_oracle_identifier(owner)
+        return f"{owner_part}.{index_part}"
+
+    def render_create_sql(
+        self,
+        table_name: str,
+        owner: str | None = None,
+    ) -> str:
+        return self.create_sql_template.format(
+            index=self.sql_name(owner),
+            table=table_name,
+        )
+
+
+@dataclass(frozen=True)
 class OracleTableDefinition:
     """
     Source-of-truth definition for one Oracle table managed by this registry.
@@ -30,7 +74,7 @@ class OracleTableDefinition:
     name: str
     create_sql_template: str
     description: str = ""
-    index_sql_templates: tuple[str, ...] = ()
+    index_definitions: tuple[OracleIndexDefinition, ...] = ()
 
     @property
     def dictionary_name(self) -> str:
@@ -64,18 +108,6 @@ class OracleTableDefinition:
     def render_drop_sql(self, owner: str | None = None) -> str:
         return f"DROP TABLE {self.sql_name(owner)} PURGE"
 
-    def render_index_sql(self, owner: str | None = None) -> list[str]:
-        table_name = self.sql_name(owner)
-        index_owner = render_oracle_identifier(owner) + "." if owner else ""
-
-        return [
-            index_sql_template.format(
-                table=table_name,
-                index_owner=index_owner,
-            )
-            for index_sql_template in self.index_sql_templates
-        ]
-
 
 @dataclass
 class OracleDBOperationResult:
@@ -108,8 +140,8 @@ def render_oracle_identifier(identifier: str | None) -> str:
         AI_REQUEST_AUDIT
         IDX_AI_AUDIT_CREATED_AT
 
-    It rejects mixed-case names, spaces, punctuation, or quoted names because
-    this registry only owns AI_REQUEST_AUDIT.
+    It rejects mixed-case names, spaces, punctuation, or already-quoted names
+    because this registry only owns AI_REQUEST_AUDIT.
     """
     clean_identifier = str(identifier or "").strip()
 
@@ -196,7 +228,7 @@ def get_ai_request_audit_table_definition() -> OracleTableDefinition:
     """
     Return the project source-of-truth definition for AI_REQUEST_AUDIT.
 
-    This mirrors the existing table structure you exported from Oracle, minus
+    This mirrors the existing table structure exported from Oracle, minus
     Oracle storage/tablespace clauses so the table can be recreated on another
     demo database.
     """
@@ -261,15 +293,35 @@ CREATE TABLE {table} (
     PRIMARY KEY ("ID") ENABLE
 )
 """.strip(),
-        index_sql_templates=(
-            'CREATE INDEX {index_owner}"IDX_AI_AUDIT_CREATED_AT" '
-            'ON {table} ("CREATED_AT")',
-            'CREATE INDEX {index_owner}"IDX_AI_AUDIT_REQUEST_ID" '
-            'ON {table} ("REQUEST_ID")',
-            'CREATE INDEX {index_owner}"IDX_AI_AUDIT_COMMAND_TYPE" '
-            'ON {table} ("SQL_COMMAND_TYPE")',
-            'CREATE INDEX {index_owner}"IDX_AI_AUDIT_SUCCESS" '
-            'ON {table} ("EXECUTION_SUCCESS")',
+        index_definitions=(
+            OracleIndexDefinition(
+                name="IDX_AI_AUDIT_CREATED_AT",
+                create_sql_template=(
+                    'CREATE INDEX {index} ON {table} ("CREATED_AT")'
+                ),
+                description="Speeds up audit history sorting and recent audit lookups.",
+            ),
+            OracleIndexDefinition(
+                name="IDX_AI_AUDIT_REQUEST_ID",
+                create_sql_template=(
+                    'CREATE INDEX {index} ON {table} ("REQUEST_ID")'
+                ),
+                description="Speeds up lookup by application request ID.",
+            ),
+            OracleIndexDefinition(
+                name="IDX_AI_AUDIT_COMMAND_TYPE",
+                create_sql_template=(
+                    'CREATE INDEX {index} ON {table} ("SQL_COMMAND_TYPE")'
+                ),
+                description="Speeds up filtering audit rows by generated SQL command type.",
+            ),
+            OracleIndexDefinition(
+                name="IDX_AI_AUDIT_SUCCESS",
+                create_sql_template=(
+                    'CREATE INDEX {index} ON {table} ("EXECUTION_SUCCESS")'
+                ),
+                description="Speeds up filtering successful and failed executions.",
+            ),
         ),
     )
 
@@ -296,6 +348,12 @@ class OracleDatabaseRegistry:
 
     This class does not bypass the service layer. It executes SQL through
     OracleQueryService.
+
+    Important:
+        If a query_service is injected, this registry will use it.
+        If no query_service is injected, this registry creates a fresh
+        OracleQueryService per SQL call. That avoids reusing a service whose
+        underlying Oracle connection may already have been closed.
     """
 
     DEFAULT_TABLE_KEY = "ai_request_audit"
@@ -307,7 +365,10 @@ class OracleDatabaseRegistry:
     ) -> None:
         self.config = get_oracle_config()
         self.owner = owner or self.config.oracle_user
-        self.query_service = query_service or OracleQueryService()
+
+        # Keep the injected service only if the caller supplied one.
+        # Otherwise, _run_sql() creates a fresh OracleQueryService per call.
+        self.query_service = query_service
 
         self._definitions = {
             definition.key: definition
@@ -315,10 +376,29 @@ class OracleDatabaseRegistry:
         }
 
         logger.debug(
-            "OracleDatabaseRegistry initialized. owner=%s table_count=%s",
+            "OracleDatabaseRegistry initialized. owner=%s table_count=%s injected_query_service=%s",
             self.owner,
             len(self._definitions),
+            self.query_service is not None,
         )
+
+    def _run_sql(
+        self,
+        sql: str,
+        binds: dict[str, Any] | None = None,
+    ) -> Any:
+        """
+        Run SQL through OracleQueryService.
+
+        If a query service was injected, use it.
+        Otherwise, create a fresh OracleQueryService per SQL call.
+        """
+        service = self.query_service or OracleQueryService()
+
+        if binds is None:
+            return service.run_sql(sql)
+
+        return service.run_sql(sql, binds=binds)
 
     @property
     def definitions(self) -> dict[str, OracleTableDefinition]:
@@ -350,7 +430,16 @@ class OracleDatabaseRegistry:
                     "dictionary_name": definition.dictionary_name,
                     "sql_name": definition.sql_name(self.owner),
                     "description": definition.description,
-                    "index_count": len(definition.index_sql_templates),
+                    "index_count": len(definition.index_definitions),
+                    "indexes": [
+                        {
+                            "name": index_definition.name,
+                            "dictionary_name": index_definition.dictionary_name,
+                            "sql_name": index_definition.sql_name(self.owner),
+                            "description": index_definition.description,
+                        }
+                        for index_definition in definition.index_definitions
+                    ],
                 }
             )
 
@@ -374,7 +463,7 @@ WHERE OWNER = :owner
             "table_name": definition.dictionary_name,
         }
 
-        result = self.query_service.run_sql(sql, binds=binds)
+        result = self._run_sql(sql, binds=binds)
 
         if not _result_success(result):
             raise RuntimeError(
@@ -391,6 +480,46 @@ WHERE OWNER = :owner
         except ValueError:
             return False
 
+    def index_exists(
+        self,
+        index_definition: OracleIndexDefinition,
+    ) -> bool:
+        """
+        Check whether a registered Oracle index already exists.
+
+        This prevents noisy ORA-00955 stack traces when rerunning
+        create-indexes against an existing schema.
+        """
+
+        sql = """
+SELECT COUNT(*) AS INDEX_COUNT
+FROM ALL_INDEXES
+WHERE OWNER = :owner
+  AND INDEX_NAME = :index_name
+""".strip()
+
+        binds = {
+            "owner": self.owner.upper(),
+            "index_name": index_definition.dictionary_name,
+        }
+
+        result = self._run_sql(sql, binds=binds)
+
+        if not _result_success(result):
+            raise RuntimeError(
+                f"Could not check whether index exists: "
+                f"{index_definition.sql_name(self.owner)}. "
+                f"Error: {_result_error(result)}"
+            )
+
+        rows = _result_rows(result)
+        count_value = _first_row_value(rows, "INDEX_COUNT")
+
+        try:
+            return int(count_value or 0) > 0
+        except ValueError:
+            return False
+
     def verify_registered_tables(self) -> list[dict[str, Any]]:
         statuses: list[dict[str, Any]] = []
 
@@ -398,12 +527,36 @@ WHERE OWNER = :owner
             try:
                 exists = self.table_exists(definition.key)
 
+                index_statuses: list[dict[str, Any]] = []
+                for index_definition in definition.index_definitions:
+                    try:
+                        index_statuses.append(
+                            {
+                                "name": index_definition.name,
+                                "sql_name": index_definition.sql_name(self.owner),
+                                "exists": self.index_exists(index_definition),
+                                "success": True,
+                                "error": None,
+                            }
+                        )
+                    except Exception as index_exc:
+                        index_statuses.append(
+                            {
+                                "name": index_definition.name,
+                                "sql_name": index_definition.sql_name(self.owner),
+                                "exists": False,
+                                "success": False,
+                                "error": str(index_exc),
+                            }
+                        )
+
                 statuses.append(
                     {
                         "key": definition.key,
                         "name": definition.name,
                         "sql_name": definition.sql_name(self.owner),
                         "exists": exists,
+                        "indexes": index_statuses,
                         "success": True,
                         "error": None,
                     }
@@ -421,6 +574,7 @@ WHERE OWNER = :owner
                         "name": definition.name,
                         "sql_name": definition.sql_name(self.owner),
                         "exists": False,
+                        "indexes": [],
                         "success": False,
                         "error": str(exc),
                     }
@@ -468,7 +622,7 @@ WHERE OWNER = :owner
                 table_name,
             )
 
-            result = self.query_service.run_sql(create_sql)
+            result = self._run_sql(create_sql)
 
             if not _result_success(result):
                 return OracleDBOperationResult(
@@ -531,15 +685,52 @@ WHERE OWNER = :owner
 
         results: list[OracleDBOperationResult] = []
 
-        for index_sql in definition.render_index_sql(self.owner):
+        if not self.table_exists(definition.key):
+            return [
+                OracleDBOperationResult(
+                    success=False,
+                    action="create_index",
+                    table_key=definition.key,
+                    table_name=table_name,
+                    message=f"Cannot create indexes because table does not exist: {table_name}",
+                    error="Missing table",
+                )
+            ]
+
+        for index_definition in definition.index_definitions:
+            index_name = index_definition.sql_name(self.owner)
+
             try:
-                logger.info(
-                    "Creating Oracle index for table. key=%s table=%s",
-                    definition.key,
-                    table_name,
+                if self.index_exists(index_definition):
+                    results.append(
+                        OracleDBOperationResult(
+                            success=True,
+                            action="create_index",
+                            table_key=definition.key,
+                            table_name=table_name,
+                            message=f"Index already exists: {index_name}",
+                            details={
+                                "index_name": index_name,
+                                "created": False,
+                                "skipped": True,
+                            },
+                        )
+                    )
+                    continue
+
+                index_sql = index_definition.render_create_sql(
+                    table_name=table_name,
+                    owner=self.owner,
                 )
 
-                result = self.query_service.run_sql(index_sql)
+                logger.info(
+                    "Creating Oracle index. key=%s table=%s index=%s",
+                    definition.key,
+                    table_name,
+                    index_name,
+                )
+
+                result = self._run_sql(index_sql)
 
                 if _result_success(result):
                     results.append(
@@ -548,20 +739,20 @@ WHERE OWNER = :owner
                             action="create_index",
                             table_key=definition.key,
                             table_name=table_name,
-                            message=(
-                                _result_message(result)
-                                or f"Index created for table: {table_name}"
-                            ),
+                            message=f"Index created: {index_name}",
                             details={
+                                "index_name": index_name,
                                 "sql": index_sql,
+                                "created": True,
+                                "skipped": False,
                             },
                         )
                     )
                 else:
                     error = _result_error(result) or ""
 
-                    # ORA-00955: name is already used by an existing object.
-                    # Treat this as non-fatal because indexes may already exist.
+                    # Keep this as a fallback in case another process creates
+                    # the index between index_exists() and CREATE INDEX.
                     if "ORA-00955" in error:
                         results.append(
                             OracleDBOperationResult(
@@ -569,13 +760,13 @@ WHERE OWNER = :owner
                                 action="create_index",
                                 table_key=definition.key,
                                 table_name=table_name,
-                                message=(
-                                    f"Index already exists for table: "
-                                    f"{table_name}"
-                                ),
+                                message=f"Index already exists: {index_name}",
                                 details={
+                                    "index_name": index_name,
                                     "sql": index_sql,
                                     "oracle_error": error,
+                                    "created": False,
+                                    "skipped": True,
                                 },
                             )
                         )
@@ -589,16 +780,20 @@ WHERE OWNER = :owner
                                 message=_result_message(result),
                                 error=error,
                                 details={
+                                    "index_name": index_name,
                                     "sql": index_sql,
+                                    "created": False,
+                                    "skipped": False,
                                 },
                             )
                         )
 
             except Exception as exc:
                 logger.exception(
-                    "Failed to create Oracle index. key=%s table=%s",
+                    "Failed to create Oracle index. key=%s table=%s index=%s",
                     definition.key,
                     table_name,
+                    index_name,
                 )
 
                 results.append(
@@ -607,10 +802,12 @@ WHERE OWNER = :owner
                         action="create_index",
                         table_key=definition.key,
                         table_name=table_name,
-                        message=f"Failed to create index for table: {table_name}",
+                        message=f"Failed to create index: {index_name}",
                         error=str(exc),
                         details={
-                            "sql": index_sql,
+                            "index_name": index_name,
+                            "created": False,
+                            "skipped": False,
                         },
                     )
                 )
@@ -648,7 +845,7 @@ WHERE OWNER = :owner
                 table_name,
             )
 
-            result = self.query_service.run_sql(drop_sql)
+            result = self._run_sql(drop_sql)
 
             if not _result_success(result):
                 return OracleDBOperationResult(
