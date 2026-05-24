@@ -20,12 +20,19 @@ Expected .env values:
     ORACLE_PASSWORD=devpass
     ORACLE_DSN=localhost:1521/FREEPDB1
     ORACLE_JDBC_URL=jdbc:oracle:thin:@//localhost:1521/FREEPDB1
+
     ORDS_BASE_URL=http://localhost:8080/ords
-    ORDS_SCHEMA_PATH=/dev
+    ORDS_SCHEMA_PATH=dev
     ORDS_COLOURS_ENDPOINT=/colours
+
     JAVA_HOME=C:\\java\\jdk-17.0.17
     SQLCL_JDBC=thin
     APP_ENV=local
+
+Optional .env values:
+
+    ORDS_DATABASE_ACTIONS_PATH=/sql-developer
+    ORDS_DATABASE_ACTIONS_URL=http://localhost:8080/ords/sql-developer
 """
 
 from __future__ import annotations
@@ -152,6 +159,40 @@ def _get_required_int_env(name: str) -> int:
         ) from exc
 
 
+def _normalize_base_url(value: str) -> str:
+    """
+    Normalize a base URL by removing trailing slashes.
+
+    Example:
+        http://localhost:8080/ords/ -> http://localhost:8080/ords
+    """
+    return str(value).strip().rstrip("/")
+
+
+def _normalize_url_path(value: str) -> str:
+    """
+    Normalize URL path values.
+
+    Examples:
+        dev              -> /dev
+        /dev             -> /dev
+        /dev/            -> /dev
+        sql-developer    -> /sql-developer
+        /sql-developer   -> /sql-developer
+    """
+    cleaned = str(value).strip()
+
+    if not cleaned:
+        return ""
+
+    cleaned = cleaned.strip("/")
+
+    if not cleaned:
+        return ""
+
+    return f"/{cleaned}"
+
+
 @dataclass(frozen=True)
 class OracleConfig:
     """
@@ -179,6 +220,8 @@ class OracleConfig:
     ords_base_url: str
     ords_schema_path: str
     ords_colours_endpoint: str
+    ords_database_actions_path: str
+    ords_database_actions_url_override: Optional[str]
 
     # Java / SQLcl
     java_home: str
@@ -202,7 +245,10 @@ class OracleConfig:
         Example:
             http://localhost:8080/ords/dev
         """
-        return self._join_url(self.ords_base_url, self.ords_schema_path)
+        return self._join_url(
+            self.ords_base_url,
+            self.ords_schema_path,
+        )
 
     @property
     def ords_colours_url(self) -> str:
@@ -216,6 +262,24 @@ class OracleConfig:
             self.ords_base_url,
             self.ords_schema_path,
             self.ords_colours_endpoint,
+        )
+
+    @property
+    def ords_database_actions_url(self) -> str:
+        """
+        Returns the Oracle Database Actions / SQL Developer Web URL.
+
+        Default example:
+            http://localhost:8080/ords/sql-developer
+
+        If ORDS_DATABASE_ACTIONS_URL is supplied in .env, that value wins.
+        """
+        if self.ords_database_actions_url_override:
+            return _normalize_base_url(self.ords_database_actions_url_override)
+
+        return self._join_url(
+            self.ords_base_url,
+            self.ords_database_actions_path,
         )
 
     @property
@@ -239,6 +303,8 @@ class OracleConfig:
             "ords_base_url": self.ords_base_url,
             "ords_schema_path": self.ords_schema_path,
             "ords_colours_endpoint": self.ords_colours_endpoint,
+            "ords_database_actions_path": self.ords_database_actions_path,
+            "ords_database_actions_url": self.ords_database_actions_url,
             "ords_schema_url": self.ords_schema_url,
             "ords_colours_url": self.ords_colours_url,
             "java_home": self.java_home,
@@ -285,6 +351,31 @@ def get_oracle_config() -> OracleConfig:
     env_path = _load_env_file()
     project_root = env_path.parent
 
+    ords_base_url = _normalize_base_url(
+        _get_required_env("ORDS_BASE_URL")
+    )
+
+    ords_schema_path = _normalize_url_path(
+        _get_required_env("ORDS_SCHEMA_PATH")
+    )
+
+    ords_colours_endpoint = _normalize_url_path(
+        _get_required_env("ORDS_COLOURS_ENDPOINT")
+    )
+
+    ords_database_actions_path = _normalize_url_path(
+        _get_optional_env(
+            "ORDS_DATABASE_ACTIONS_PATH",
+            "/sql-developer",
+        )
+        or "/sql-developer"
+    )
+
+    ords_database_actions_url_override = _get_optional_env(
+        "ORDS_DATABASE_ACTIONS_URL",
+        None,
+    )
+
     config = OracleConfig(
         project_root=project_root,
         env_file=env_path,
@@ -300,9 +391,11 @@ def get_oracle_config() -> OracleConfig:
         oracle_dsn=_get_required_env("ORACLE_DSN"),
         oracle_jdbc_url=_get_required_env("ORACLE_JDBC_URL"),
 
-        ords_base_url=_get_required_env("ORDS_BASE_URL"),
-        ords_schema_path=_get_required_env("ORDS_SCHEMA_PATH"),
-        ords_colours_endpoint=_get_required_env("ORDS_COLOURS_ENDPOINT"),
+        ords_base_url=ords_base_url,
+        ords_schema_path=ords_schema_path,
+        ords_colours_endpoint=ords_colours_endpoint,
+        ords_database_actions_path=ords_database_actions_path,
+        ords_database_actions_url_override=ords_database_actions_url_override,
 
         java_home=_get_required_env("JAVA_HOME"),
         sqlcl_jdbc=_get_optional_env("SQLCL_JDBC", "thin") or "thin",
