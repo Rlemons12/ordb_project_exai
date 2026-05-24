@@ -165,16 +165,31 @@ def _probe_http_url(url: str, timeout_seconds: float = 3.0) -> dict[str, Any]:
 def oracle_ai_index_page():
     """
     Render the Oracle AI console landing page.
+
+    The modular base template controls:
+        - theme
+        - sidebar
+        - page header
+        - content container
+        - reusable container layout
     """
     logger.info("Rendering Oracle AI console index page.")
 
     return render_template(
-        "index.html",
+        "index/index.html",
         page_title="Oracle AI Console",
+        page_heading="Oracle AI Console",
+        page_subtitle=(
+            "A reusable Oracle AI interface with shared layout, sidebar navigation, "
+            "theme support, and modular page containers."
+        ),
+        project_name="ordb_project_exai",
+        theme_class="theme-oracle-dark",
+        theme_name="theme-oracle-dark",
         base_css_url="/oracle-ai/assets/css/base.css",
         theme_css_url="/oracle-ai/assets/css/themes/theme-oracle-dark.css",
         layout_css_url="/oracle-ai/assets/css/oracle_ai_layout.css",
-        home_url="/",
+        home_url="/oracle-ai/",
         chat_url="/oracle-ai/chat",
         audit_url="/oracle-ai/audit",
         schema_summary_url="/oracle-ai/schema-summary",
@@ -186,7 +201,7 @@ def oracle_ai_index_page():
         ords_schema_url=ORDS_SCHEMA_URL,
         ords_database_actions_url=ORDS_DATABASE_ACTIONS_URL,
         execution_mode="Demo Full Access",
-        theme_name="theme-oracle-dark",
+        active_page="home",
     )
 
 
@@ -207,27 +222,43 @@ def oracle_ai_sql_developer_page():
     )
 
     return render_template(
-        "oracle_sql_developer.html",
-        page_title="Oracle SQL Developer Web",
+        "modular_template/base.html",
+        page_title="Oracle AI Console",
+        page_heading="Oracle AI Console",
+        page_subtitle=(
+            "A reusable Oracle AI interface with shared layout, sidebar navigation, "
+            "theme support, and modular page containers."
+        ),
+        project_name="ordb_project_exai",
+
+        theme_class="theme-oracle-dark",
+        theme_name="theme-oracle-dark",
+
         base_css_url="/oracle-ai/assets/css/base.css",
         theme_css_url="/oracle-ai/assets/css/themes/theme-oracle-dark.css",
         layout_css_url="/oracle-ai/assets/css/oracle_ai_layout.css",
-        page_css_url="/oracle-ai/assets/css/oracle_sql_developer.css",
+
         home_url="/oracle-ai/",
-        app_home_url="/",
         chat_url="/oracle-ai/chat",
         audit_url="/oracle-ai/audit",
+
+        home_partial_url="/oracle-ai/partials/home",
+        chat_partial_url="/oracle-ai/partials/chat",
+        audit_partial_url="/oracle-ai/partials/audit",
+
         schema_summary_url="/oracle-ai/schema-summary",
         health_url="/oracle-ai/health",
-        ords_status_url="/oracle-ai/ords/status",
-        ords_base_url=ORDS_BASE_URL,
-        ords_schema_path=ORDS_SCHEMA_PATH,
-        ords_schema_url=ORDS_SCHEMA_URL,
-        ords_database_actions_url=ORDS_DATABASE_ACTIONS_URL,
-        execution_mode="Demo Full Access",
-        theme_name="theme-oracle-dark",
-    )
 
+        execution_mode="Demo Full Access",
+        active_page="home",
+
+        initial_content_template="index/partials/home_content.html",
+
+        extra_js_urls=[
+            "/oracle-ai/assets/js/modular_template/modular_content_router.js",
+            "/oracle-ai/assets/js/modular_template/sidebar_toggle.js",
+        ],
+    )
 
 @oracle_ai_bp.route("/ords/status", methods=["GET"])
 def oracle_ai_ords_status():
@@ -421,21 +452,72 @@ def ask_oracle_ai():
         clear_request_id()
 
 
+@oracle_ai_bp.route("/", methods=["GET"])
 @oracle_ai_bp.route("/chat", methods=["GET"])
 def oracle_ai_chat_page():
     """
     Render the Oracle AI chat page.
+
+    This route uses the modular template pattern:
+        - modular_template/base.html owns the sidebar, header, theme, and shell.
+        - oracle_ai_chat/oracle_ai_chat.html only fills the content container.
     """
     logger.info("Rendering Oracle AI chat page.")
 
     return render_template(
-        "oracle_ai_chat.html",
+        "oracle_ai_chat/oracle_ai_chat.html",
+
+        # ------------------------------------------------------------
+        # Page identity / header
+        # ------------------------------------------------------------
         page_title="Oracle AI Chat",
-        css_url="/oracle-ai/assets/css/oracle_ai_chat.css",
+        page_heading="Oracle AI Chat",
+        page_subtitle=(
+            "Ask natural-language questions. The app builds schema context, "
+            "asks the AI for Oracle SQL, executes it, and explains the result."
+        ),
+        project_name="ordb_project_exai",
+
+        # ------------------------------------------------------------
+        # Theme / CSS
+        # ------------------------------------------------------------
+        theme_class="theme-oracle-dark",
+        theme_name="theme-oracle-dark",
+        base_css_url="/oracle-ai/assets/css/base.css",
+        theme_css_url="/oracle-ai/assets/css/themes/theme-oracle-dark.css",
+        layout_css_url="/oracle-ai/assets/css/oracle_ai_layout.css",
+        page_css_url="/oracle-ai/assets/css/oracle_ai_chat.css",
+
+        # ------------------------------------------------------------
+        # JavaScript
+        # ------------------------------------------------------------
         js_url="/oracle-ai/assets/js/oracle_ai_chat.js",
-        home_url="/",
+        modular_router_js_url="/oracle-ai/assets/js/modular_template/modular_content_router.js",
+
+        # ------------------------------------------------------------
+        # Sidebar navigation URLs
+        # ------------------------------------------------------------
+        home_url="/oracle-ai/",
+        chat_url="/oracle-ai/chat",
         audit_url="/oracle-ai/audit",
-        sql_developer_view_url="/oracle-ai/sql-developer",
+        schema_summary_url="/oracle-ai/schema-summary",
+        health_url="/oracle-ai/health",
+
+        # ------------------------------------------------------------
+        # Partial swap URLs
+        # ------------------------------------------------------------
+        home_partial_url="/oracle-ai/partials/home",
+        chat_partial_url="/oracle-ai/partials/chat",
+        audit_partial_url="/oracle-ai/partials/audit",
+
+        # ------------------------------------------------------------
+        # Sidebar / mode
+        # ------------------------------------------------------------
+        sidebar_logo_text="AI",
+        sidebar_title="Oracle AI",
+        sidebar_subtitle="Demo Console",
+        execution_mode="Demo Full Access",
+        active_page="chat",
     )
 
 
