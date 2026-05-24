@@ -1,18 +1,32 @@
 from __future__ import annotations
 
+from __future__ import annotations
+
 from dataclasses import asdict, is_dataclass
 from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from flask import Blueprint, jsonify, render_template, request, send_from_directory
 
 from app.models.configuration import clear_request_id, get_exai_logger, set_request_id
 from app.models.configuration.config import CSS_DIR, JS_DIR
+from app.models.configuration.oracle_config import get_oracle_config
 from app.models.coordinator import OracleAICoordinator
 from app.models.service import OracleSchemaService
 from app.models.service.oracle.ai_audit_service import OracleAIAuditService
 
 
 logger = get_exai_logger(__name__)
+
+oracle_config = get_oracle_config()
+
+ORDS_BASE_URL = oracle_config.ords_base_url
+ORDS_SCHEMA_PATH = oracle_config.ords_schema_path
+ORDS_SCHEMA_URL = oracle_config.ords_schema_url
+ORDS_DATABASE_ACTIONS_URL = oracle_config.ords_database_actions_url
+
+
 
 
 oracle_ai_bp = Blueprint(
@@ -90,6 +104,63 @@ def _parse_int(
     return parsed
 
 
+def _probe_http_url(url: str, timeout_seconds: float = 3.0) -> dict[str, Any]:
+    """
+    Probe a URL from the Flask backend.
+
+    This is used by /oracle-ai/ords/status so the browser does not need to
+    call ORDS directly and run into CORS or browser security issues.
+    """
+    result: dict[str, Any] = {
+        "success": False,
+        "url": url,
+        "status_code": None,
+        "reason": None,
+        "error": None,
+    }
+
+    if not url:
+        result["error"] = "No URL was provided."
+        return result
+
+    try:
+        http_request = Request(
+            url=url,
+            method="GET",
+            headers={
+                "User-Agent": "ordb-project-exai-ords-probe/1.0",
+            },
+        )
+
+        with urlopen(http_request, timeout=timeout_seconds) as response:
+            status_code = getattr(response, "status", None)
+            reason = getattr(response, "reason", None)
+
+            result["status_code"] = status_code
+            result["reason"] = reason
+            result["success"] = bool(status_code and 200 <= int(status_code) < 500)
+
+            # Read a very small amount so the connection can close cleanly.
+            response.read(256)
+
+            return result
+
+    except HTTPError as exc:
+        result["status_code"] = exc.code
+        result["reason"] = exc.reason
+        result["error"] = str(exc)
+        result["success"] = 200 <= int(exc.code) < 500
+        return result
+
+    except URLError as exc:
+        result["error"] = str(exc.reason)
+        return result
+
+    except Exception as exc:
+        result["error"] = str(exc)
+        return result
+
+
 @oracle_ai_bp.route("/", methods=["GET"])
 def oracle_ai_index_page():
     """
@@ -108,9 +179,134 @@ def oracle_ai_index_page():
         audit_url="/oracle-ai/audit",
         schema_summary_url="/oracle-ai/schema-summary",
         health_url="/oracle-ai/health",
+        sql_developer_view_url="/oracle-ai/sql-developer",
+        ords_status_url="/oracle-ai/ords/status",
+        ords_base_url=ORDS_BASE_URL,
+        ords_schema_path=ORDS_SCHEMA_PATH,
+        ords_schema_url=ORDS_SCHEMA_URL,
+        ords_database_actions_url=ORDS_DATABASE_ACTIONS_URL,
         execution_mode="Demo Full Access",
         theme_name="theme-oracle-dark",
     )
+
+
+@oracle_ai_bp.route("/sql-developer", methods=["GET"])
+def oracle_ai_sql_developer_page():
+    """
+    Render the Oracle SQL Developer Web / Database Actions launch page.
+
+    ORDS Database Actions is intentionally opened in a new tab/window instead
+    of being embedded in an iframe. The local ORDS response includes
+    X-Frame-Options: SAMEORIGIN, and the Flask app runs on a different port.
+    """
+    logger.info(
+        "Rendering Oracle SQL Developer Web view. ords_base_url=%s ords_schema_url=%s database_actions_url=%s",
+        ORDS_BASE_URL,
+        ORDS_SCHEMA_URL,
+        ORDS_DATABASE_ACTIONS_URL,
+    )
+
+    return render_template(
+        "oracle_sql_developer.html",
+        page_title="Oracle SQL Developer Web",
+        base_css_url="/oracle-ai/assets/css/base.css",
+        theme_css_url="/oracle-ai/assets/css/themes/theme-oracle-dark.css",
+        layout_css_url="/oracle-ai/assets/css/oracle_ai_layout.css",
+        page_css_url="/oracle-ai/assets/css/oracle_sql_developer.css",
+        home_url="/oracle-ai/",
+        app_home_url="/",
+        chat_url="/oracle-ai/chat",
+        audit_url="/oracle-ai/audit",
+        schema_summary_url="/oracle-ai/schema-summary",
+        health_url="/oracle-ai/health",
+        ords_status_url="/oracle-ai/ords/status",
+        ords_base_url=ORDS_BASE_URL,
+        ords_schema_path=ORDS_SCHEMA_PATH,
+        ords_schema_url=ORDS_SCHEMA_URL,
+        ords_database_actions_url=ORDS_DATABASE_ACTIONS_URL,
+        execution_mode="Demo Full Access",
+        theme_name="theme-oracle-dark",
+    )
+
+
+@oracle_ai_bp.route("/ords/status", methods=["GET"])
+def oracle_ai_ords_status():
+    """
+    Return ORDS connectivity status as JSON.
+
+    This checks ORDS from the Flask backend.
+    """
+    request_id = set_request_id()
+
+    try:
+        logger.info(
+            "ORDS status check requested. request_id=%s ords_base_url=%s ords_database_actions_url=%s",
+            request_id,
+            ORDS_BASE_URL,
+            ORDS_DATABASE_ACTIONS_URL,
+        )
+
+        base_probe = _probe_http_url(ORDS_BASE_URL)
+        database_actions_probe = _probe_http_url(ORDS_DATABASE_ACTIONS_URL)
+
+        success = bool(base_probe.get("success"))
+
+        response_payload = {
+            "success": success,
+            "service": "ords",
+            "message": (
+                "ORDS base URL is reachable."
+                if success
+                else "ORDS base URL is not reachable from the Flask backend."
+            ),
+            "request_id": request_id,
+            "ords": {
+                "base_url": ORDS_BASE_URL,
+                "schema_path": ORDS_SCHEMA_PATH,
+                "schema_url": ORDS_SCHEMA_URL,
+                "database_actions_url": ORDS_DATABASE_ACTIONS_URL,
+            },
+            "checks": {
+                "base_url": base_probe,
+                "database_actions_url": database_actions_probe,
+            },
+        }
+
+        status_code = 200 if success else 503
+
+        logger.info(
+            "ORDS status check completed. request_id=%s success=%s status_code=%s",
+            request_id,
+            success,
+            status_code,
+        )
+
+        return jsonify(response_payload), status_code
+
+    except Exception as exc:
+        logger.exception(
+            "ORDS status check route failed. request_id=%s",
+            request_id,
+        )
+
+        return jsonify(
+            {
+                "success": False,
+                "service": "ords",
+                "message": "ORDS status check failed.",
+                "error": str(exc),
+                "request_id": request_id,
+                "ords": {
+                    "base_url": ORDS_BASE_URL,
+                    "schema_path": ORDS_SCHEMA_PATH,
+                    "schema_url": ORDS_SCHEMA_URL,
+                    "database_actions_url": ORDS_DATABASE_ACTIONS_URL,
+                },
+            }
+        ), 500
+
+    finally:
+        clear_request_id()
 
 
 @oracle_ai_bp.route("/ask", methods=["POST"])
@@ -224,6 +420,7 @@ def ask_oracle_ai():
     finally:
         clear_request_id()
 
+
 @oracle_ai_bp.route("/chat", methods=["GET"])
 def oracle_ai_chat_page():
     """
@@ -238,6 +435,7 @@ def oracle_ai_chat_page():
         js_url="/oracle-ai/assets/js/oracle_ai_chat.js",
         home_url="/",
         audit_url="/oracle-ai/audit",
+        sql_developer_view_url="/oracle-ai/sql-developer",
     )
 
 
@@ -255,6 +453,7 @@ def oracle_ai_audit_page():
         js_url="/oracle-ai/assets/js/oracle_ai_audit.js",
         recent_url="/oracle-ai/audit/recent",
         chat_url="/oracle-ai/",
+        sql_developer_view_url="/oracle-ai/sql-developer",
     )
 
 
@@ -435,16 +634,26 @@ def oracle_ai_health():
             "service": "oracle-ai-chat",
             "message": "Oracle AI chat blueprint is registered.",
             "routes": {
-                "chat": "/oracle-ai/",
+                "index": "/oracle-ai/",
+                "chat": "/oracle-ai/chat",
                 "ask": "/oracle-ai/ask",
                 "audit": "/oracle-ai/audit",
                 "audit_recent": "/oracle-ai/audit/recent",
                 "schema_summary": "/oracle-ai/schema-summary",
+                "sql_developer": "/oracle-ai/sql-developer",
+                "ords_status": "/oracle-ai/ords/status",
                 "health": "/oracle-ai/health",
                 "chat_css": "/oracle-ai/assets/css/oracle_ai_chat.css",
                 "chat_js": "/oracle-ai/assets/js/oracle_ai_chat.js",
                 "audit_css": "/oracle-ai/assets/css/oracle_ai_audit.css",
                 "audit_js": "/oracle-ai/assets/js/oracle_ai_audit.js",
+                "sql_developer_css": "/oracle-ai/assets/css/oracle_sql_developer.css",
+            },
+            "ords": {
+                "base_url": ORDS_BASE_URL,
+                "schema_path": ORDS_SCHEMA_PATH,
+                "schema_url": ORDS_SCHEMA_URL,
+                "database_actions_url": ORDS_DATABASE_ACTIONS_URL,
             },
         }
     )
