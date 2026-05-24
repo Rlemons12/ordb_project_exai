@@ -1,239 +1,900 @@
-.oracle-sql-dev-page {
+/* ==========================================================================
+   Oracle AI Demo - Reusable Layout CSS
+   --------------------------------------------------------------------------
+   Purpose:
+   - Controls reusable page structure only
+   - Main app shell
+   - Sidebar container
+   - Collapsible sidebar
+   - Content container
+   - Header area
+   - Partial/content area
+   - Reusable 1-10 content container grids
+   - Mobile layout states
+
+   Depends on:
+   - app/css/base.css
+   - app/css/themes/theme-oracle-dark.css or another theme file
+
+   Theme colors should come from variables, not hardcoded here.
+   ========================================================================== */
+
+
+/* ==========================================================================
+   1. Main app shell
+   ========================================================================== */
+
+.main-container,
+.oracle-app-shell {
     min-height: 100vh;
-    background:
-        radial-gradient(circle at top left, rgba(255, 86, 48, 0.16), transparent 32rem),
-        radial-gradient(circle at bottom right, rgba(255, 200, 87, 0.12), transparent 34rem),
-        #080808;
-    color: #f5f5f5;
-    padding: 2rem;
-}
+    width: 100%;
 
-.oracle-sql-dev-shell {
-    width: min(1200px, 100%);
-    margin: 0 auto;
-}
+    display: grid;
+    grid-template-columns: var(--sidebar-width, 280px) minmax(0, 1fr);
+    align-items: stretch;
 
-.oracle-sql-dev-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1.5rem;
-    padding: 1.5rem;
-    border: 1px solid rgba(255, 200, 87, 0.35);
-    border-radius: 1.25rem;
-    background: rgba(17, 17, 17, 0.92);
-    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.38);
-}
+    background: var(--page-background, var(--page-bg));
+    color: var(--text-main);
 
-.oracle-sql-dev-kicker {
-    margin: 0 0 0.4rem;
-    color: #ffc857;
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.oracle-sql-dev-header h1 {
-    margin: 0;
-    color: #ffffff;
-    font-size: clamp(2rem, 4vw, 3.25rem);
-    line-height: 1.05;
-}
-
-.oracle-sql-dev-subtitle {
-    max-width: 720px;
-    margin: 0.8rem 0 0;
-    color: #cfcfcf;
-    font-size: 1rem;
-    line-height: 1.55;
-}
-
-.oracle-sql-dev-header-actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 0.75rem;
-}
-
-.oracle-sql-dev-link,
-.oracle-sql-dev-button,
-.oracle-sql-dev-launch-large {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid transparent;
-    border-radius: 0.85rem;
-    padding: 0.75rem 1rem;
-    font-weight: 700;
-    text-decoration: none;
-    cursor: pointer;
     transition:
-        transform 120ms ease,
-        border-color 120ms ease,
-        background-color 120ms ease,
-        color 120ms ease;
+        grid-template-columns var(--transition-normal, 180ms ease-in-out),
+        background-color var(--transition-normal, 180ms ease-in-out);
 }
 
-.oracle-sql-dev-link:hover,
-.oracle-sql-dev-button:hover,
-.oracle-sql-dev-launch-large:hover {
-    transform: translateY(-1px);
+
+/* ==========================================================================
+   2. Sidebar container
+   ========================================================================== */
+
+.sidebar-container,
+.oracle-sidebar-container {
+    min-width: 0;
+    width: auto;
+
+    position: sticky;
+    top: 0;
+
+    height: 100vh;
+    min-height: 100vh;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    background: var(--sidebar-background, var(--sidebar-bg));
+    border-right: 1px solid var(--border-main);
+    box-shadow: var(--shadow-soft);
+
+    transition:
+        background-color var(--transition-normal, 180ms ease-in-out),
+        border-color var(--transition-normal, 180ms ease-in-out),
+        box-shadow var(--transition-normal, 180ms ease-in-out);
 }
 
-.oracle-sql-dev-link.primary,
-.oracle-sql-dev-launch-large {
-    background: #ffc857;
-    color: #111111;
-    border-color: #ffc857;
+.sidebar-container::-webkit-scrollbar,
+.oracle-sidebar-container::-webkit-scrollbar {
+    width: 8px;
 }
 
-.oracle-sql-dev-link.secondary,
-.oracle-sql-dev-button {
-    background: rgba(255, 255, 255, 0.06);
-    color: #f5f5f5;
-    border-color: rgba(255, 255, 255, 0.16);
+.sidebar-container::-webkit-scrollbar-track,
+.oracle-sidebar-container::-webkit-scrollbar-track {
+    background: var(--panel-bg);
 }
 
-.oracle-sql-dev-button:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
-    transform: none;
+.sidebar-container::-webkit-scrollbar-thumb,
+.oracle-sidebar-container::-webkit-scrollbar-thumb {
+    background: var(--border-soft);
+    border-radius: var(--radius-pill, 999px);
 }
 
-.oracle-sql-dev-grid {
+.sidebar-container::-webkit-scrollbar-thumb:hover,
+.oracle-sidebar-container::-webkit-scrollbar-thumb:hover {
+    background: var(--border-main);
+}
+
+
+/* ==========================================================================
+   3. Sidebar inner layout
+   ========================================================================== */
+
+.oracle-sidebar {
+    min-height: 100%;
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--sidebar-gap, 24px);
+
+    padding: 24px 18px;
+}
+
+.oracle-sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    min-height: 72px;
+
+    padding: 14px;
+
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-xl);
+
+    background: var(--panel-bg);
+
+    transition:
+        border-color var(--transition-fast, 120ms ease-in-out),
+        background-color var(--transition-fast, 120ms ease-in-out),
+        padding var(--transition-normal, 180ms ease-in-out);
+}
+
+.oracle-sidebar-logo {
+    flex: 0 0 auto;
+
+    width: 48px;
+    height: 48px;
+
     display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
-    gap: 1rem;
-    margin-top: 1rem;
+    place-items: center;
+
+    border-radius: var(--radius-lg);
+
+    background: var(--accent-main);
+    color: var(--text-inverted, #111111);
+    box-shadow: var(--shadow-accent, var(--shadow-soft));
+
+    font-weight: 900;
+    letter-spacing: 0.06rem;
 }
 
-.oracle-sql-dev-card {
-    padding: 1.25rem;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 1rem;
-    background: rgba(14, 14, 14, 0.92);
-    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.28);
-}
-
-.oracle-sql-dev-card h2 {
-    margin: 0 0 1rem;
-    color: #ffffff;
-    font-size: 1.25rem;
-}
-
-.oracle-sql-dev-card p {
-    color: #d4d4d4;
-    line-height: 1.6;
-}
-
-.oracle-sql-dev-details {
-    display: grid;
-    gap: 0.85rem;
-    margin: 0;
-}
-
-.oracle-sql-dev-details div {
-    display: grid;
-    gap: 0.25rem;
-}
-
-.oracle-sql-dev-details dt {
-    color: #ffc857;
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-}
-
-.oracle-sql-dev-details dd {
-    margin: 0;
+.oracle-sidebar-brand-text {
     min-width: 0;
 }
 
-.oracle-sql-dev-details code {
-    display: block;
-    overflow-x: auto;
-    padding: 0.7rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 0.65rem;
-    background: #050505;
-    color: #f5f5f5;
+.oracle-sidebar-brand h2 {
+    margin: 0;
+
+    color: var(--text-main);
+
+    font-size: 1.05rem;
+    line-height: 1.1;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.oracle-sidebar-brand p {
+    margin: 4px 0 0;
+
+    color: var(--text-muted);
+    font-size: 0.85rem;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* ==========================================================================
+   4. Sidebar collapse button
+   ========================================================================== */
+
+.sidebar-collapse-button,
+.oracle-sidebar-toggle {
+    width: 100%;
+    min-height: 40px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-md);
+
+    background: var(--panel-bg-soft);
+    color: var(--text-main);
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        border-color var(--transition-fast, 120ms ease-in-out),
+        background-color var(--transition-fast, 120ms ease-in-out),
+        color var(--transition-fast, 120ms ease-in-out),
+        transform var(--transition-fast, 120ms ease-in-out);
+}
+
+.sidebar-collapse-button:hover,
+.oracle-sidebar-toggle:hover {
+    border-color: var(--accent-main);
+    background: var(--panel-bg-raised, var(--panel-bg-soft));
+}
+
+.sidebar-collapse-button:active,
+.oracle-sidebar-toggle:active {
+    transform: translateY(1px);
+}
+
+.sidebar-collapse-icon {
+    font-size: 1.15rem;
+    line-height: 1;
+}
+
+.sidebar-collapse-label {
     white-space: nowrap;
 }
 
-.oracle-sql-dev-status {
-    display: grid;
-    gap: 0.35rem;
-    min-height: 90px;
-    margin-bottom: 1rem;
-    padding: 1rem;
-    border-radius: 0.85rem;
-    line-height: 1.45;
-}
 
-.oracle-sql-dev-status strong {
-    display: block;
-}
+/* ==========================================================================
+   5. Sidebar navigation
+   ========================================================================== */
 
-.oracle-sql-dev-status span {
-    color: inherit;
-    opacity: 0.88;
-}
-
-.oracle-sql-dev-status.checking {
-    border: 1px solid rgba(255, 200, 87, 0.32);
-    background: rgba(255, 200, 87, 0.12);
-    color: #ffd98a;
-}
-
-.oracle-sql-dev-status.online {
-    border: 1px solid rgba(74, 222, 128, 0.38);
-    background: rgba(34, 197, 94, 0.12);
-    color: #bbf7d0;
-}
-
-.oracle-sql-dev-status.offline {
-    border: 1px solid rgba(248, 113, 113, 0.45);
-    background: rgba(239, 68, 68, 0.12);
-    color: #fecaca;
-}
-
-.oracle-sql-dev-wide-card {
-    margin-top: 1rem;
-}
-
-.oracle-sql-dev-actions-row {
+.oracle-sidebar-nav {
     display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.oracle-sidebar-link {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    min-width: 0;
+
+    padding: 13px 14px;
+
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-lg);
+
+    background: var(--panel-bg);
+    color: var(--text-main);
+
+    text-decoration: none;
+
+    transition:
+        border-color var(--transition-fast, 120ms ease-in-out),
+        background-color var(--transition-fast, 120ms ease-in-out),
+        transform var(--transition-fast, 120ms ease-in-out);
+}
+
+.oracle-sidebar-link:hover {
+    border-color: var(--accent-main);
+    background: var(--accent-soft);
+}
+
+.oracle-sidebar-link:active {
+    transform: translateY(1px);
+}
+
+.oracle-sidebar-link.is-active,
+.oracle-sidebar-link[aria-current="page"] {
+    border-color: var(--accent-main);
+    background: var(--accent-soft);
+}
+
+.oracle-sidebar-link-title {
+    display: block;
+
+    color: var(--text-main);
+
+    font-weight: 800;
+    line-height: 1.2;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.oracle-sidebar-link-subtitle {
+    display: block;
+
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    line-height: 1.25;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* ==========================================================================
+   6. Sidebar footer
+   ========================================================================== */
+
+.oracle-sidebar-footer {
+    margin-top: auto;
+    padding: 14px;
+
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-lg);
+
+    background: var(--panel-bg);
+}
+
+.oracle-sidebar-footer span {
+    display: block;
+
+    color: var(--text-muted);
+    font-size: 0.78rem;
+
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+
+    margin-bottom: 6px;
+}
+
+.oracle-sidebar-footer strong {
+    display: block;
+
+    color: var(--accent-strong, var(--accent-main));
+    font-size: 0.95rem;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* ==========================================================================
+   7. Main content container
+   ========================================================================== */
+
+.content-container,
+.oracle-main-container {
+    min-width: 0;
+    width: 100%;
+    max-width: var(--content-max-width, none);
+
+    padding: var(--page-padding, 28px);
+
+    background: transparent;
+}
+
+.page-content-container,
+.oracle-partial-container {
+    min-width: 0;
+    width: 100%;
+
+    margin-top: 18px;
+
+    transition:
+        opacity var(--transition-fast, 120ms ease-in-out),
+        filter var(--transition-fast, 120ms ease-in-out);
+}
+
+.page-content-container.is-loading,
+.oracle-partial-container.is-loading {
+    opacity: 0.72;
+    pointer-events: none;
+}
+
+
+/* ==========================================================================
+   8. Main page header
+   ========================================================================== */
+
+.oracle-main-header {
+    width: 100%;
+
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--header-gap, 24px);
+
+    padding: 20px;
+
+    border: 1px solid var(--border-strong, var(--border-main));
+    border-radius: var(--radius-xl);
+
+    background: var(--header-background, var(--panel-bg));
+    box-shadow: var(--shadow-soft);
+}
+
+.oracle-main-header-text {
+    min-width: 0;
+}
+
+.oracle-main-eyebrow {
+    margin: 0 0 8px;
+
+    color: var(--accent-main);
+
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.12rem;
+    text-transform: uppercase;
+}
+
+.oracle-main-header h1 {
+    margin: 0;
+
+    color: var(--text-main);
+
+    font-size: clamp(2rem, 4vw, 3.6rem);
+    line-height: 1.05;
+}
+
+.oracle-main-subtitle {
+    max-width: 900px;
+
+    margin: 10px 0 0;
+
+    color: var(--text-muted);
+    line-height: var(--line-height-relaxed, 1.6);
+}
+
+.oracle-main-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+}
+
+.oracle-main-status-card {
+    min-width: 250px;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 14px 16px;
+
+    background: var(--panel-bg);
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+}
+
+.oracle-main-status-card small {
+    color: var(--text-muted);
+    display: block;
+    margin-top: 2px;
+}
+
+.exai-status-dot {
+    width: 14px;
+    height: 14px;
+
+    display: inline-block;
+
+    border-radius: var(--radius-pill, 999px);
+
+    background: var(--accent-main);
+    box-shadow: var(--shadow-accent, var(--shadow-soft));
+}
+
+.exai-status-dot.good {
+    background: var(--color-good);
+    box-shadow: var(--shadow-good);
+}
+
+.exai-status-dot.bad {
+    background: var(--color-danger);
+    box-shadow: var(--shadow-danger);
+}
+
+
+/* ==========================================================================
+   9. Collapsed sidebar layout state
+   --------------------------------------------------------------------------
+   JS should toggle this class on body:
+
+       document.body.classList.toggle("sidebar-collapsed");
+
+   ========================================================================== */
+
+body.sidebar-collapsed .main-container,
+body.sidebar-collapsed .oracle-app-shell,
+body.oracle-ai-body.sidebar-collapsed .main-container,
+body.oracle-ai-body.sidebar-collapsed .oracle-app-shell {
+    grid-template-columns: var(--sidebar-collapsed-width, 76px) minmax(0, 1fr);
+}
+
+body.sidebar-collapsed .oracle-sidebar,
+body.oracle-ai-body.sidebar-collapsed .oracle-sidebar {
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+body.sidebar-collapsed .oracle-sidebar-brand,
+body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-brand {
     justify-content: center;
-    margin-top: 1.25rem;
+    padding-left: 8px;
+    padding-right: 8px;
 }
 
-.oracle-sql-dev-launch-large {
-    min-width: min(100%, 420px);
-    padding: 1rem 1.25rem;
-    font-size: 1.05rem;
+body.sidebar-collapsed .oracle-sidebar-brand-text,
+body.sidebar-collapsed .oracle-sidebar-link-subtitle,
+body.sidebar-collapsed .oracle-sidebar-footer span,
+body.sidebar-collapsed .oracle-sidebar-footer strong,
+body.sidebar-collapsed .sidebar-collapse-label,
+body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-brand-text,
+body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-link-subtitle,
+body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-footer span,
+body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-footer strong,
+body.oracle-ai-body.sidebar-collapsed .sidebar-collapse-label {
+    display: none;
 }
 
-@media (max-width: 860px) {
-    .oracle-sql-dev-page {
-        padding: 1rem;
+body.sidebar-collapsed .oracle-sidebar-logo,
+body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-logo {
+    width: 48px;
+    height: 48px;
+}
+
+body.sidebar-collapsed .oracle-sidebar-link,
+body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-link {
+    align-items: center;
+    justify-content: center;
+
+    min-height: 48px;
+
+    padding: 13px 8px;
+}
+
+body.sidebar-collapsed .oracle-sidebar-link-title,
+body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-link-title {
+    max-width: 52px;
+
+    text-align: center;
+    font-size: 0.72rem;
+    line-height: 1.1;
+
+    white-space: normal;
+}
+
+body.sidebar-collapsed .sidebar-collapse-button,
+body.oracle-ai-body.sidebar-collapsed .sidebar-collapse-button {
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+body.sidebar-collapsed .oracle-sidebar-footer,
+body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-footer {
+    min-height: 44px;
+    padding: 10px;
+}
+
+
+/* ==========================================================================
+   10. Optional short-label collapsed mode
+   --------------------------------------------------------------------------
+   If your sidebar title spans use:
+       data-short-label="H"
+
+   Then this shows the short label while collapsed.
+   ========================================================================== */
+
+body.sidebar-collapsed .oracle-sidebar-link-title[data-short-label],
+body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-link-title[data-short-label] {
+    font-size: 0;
+}
+
+body.sidebar-collapsed .oracle-sidebar-link-title[data-short-label]::after,
+body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-link-title[data-short-label]::after {
+    content: attr(data-short-label);
+
+    font-size: 0.8rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+
+/* ==========================================================================
+   11. Reusable content grid utilities
+   ========================================================================== */
+
+.oracle-content-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--layout-gap, 20px);
+}
+
+.oracle-content-card,
+.oracle-content-card-soft {
+    min-width: 0;
+}
+
+.oracle-full-width {
+    grid-column: 1 / -1;
+}
+
+.oracle-half-width {
+    grid-column: span 6;
+}
+
+.oracle-third-width {
+    grid-column: span 4;
+}
+
+.oracle-two-third-width {
+    grid-column: span 8;
+}
+
+
+/* ==========================================================================
+   12. Reusable template content containers
+   ========================================================================== */
+
+.template-container-grid {
+    width: 100%;
+
+    display: grid;
+    gap: var(--layout-gap, 20px);
+    align-items: stretch;
+}
+
+.template-container-grid-1 {
+    grid-template-columns: 1fr;
+}
+
+.template-container-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.template-container-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.template-container-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.template-container-grid-5,
+.template-container-grid-6 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.template-container-grid-7,
+.template-container-grid-8,
+.template-container-grid-9,
+.template-container-grid-10 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.template-container {
+    min-width: 0;
+
+    padding: var(--panel-padding, 20px);
+
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-xl);
+
+    background: var(--card-background, var(--panel-bg));
+    box-shadow: var(--shadow-panel);
+}
+
+.template-container-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+
+    border-bottom: 1px solid var(--border-main);
+}
+
+.template-container-header h2 {
+    margin: 0;
+    font-size: 1.15rem;
+}
+
+.template-container-header p {
+    margin: 0;
+
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.template-container-body {
+    min-width: 0;
+}
+
+.template-container-empty {
+    min-height: 140px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+
+    padding: 18px;
+
+    border: 1px dashed var(--border-main);
+    border-radius: var(--radius-lg);
+
+    background: var(--panel-bg-soft);
+    color: var(--text-muted);
+}
+
+.template-container-empty strong {
+    color: var(--text-main);
+}
+
+
+/* ==========================================================================
+   13. Mobile sidebar state
+   --------------------------------------------------------------------------
+   Under 980px, sidebar stacks above the content.
+   ========================================================================== */
+
+.oracle-mobile-backdrop {
+    display: none;
+}
+
+@media (max-width: 1200px) {
+    .template-container-grid-3,
+    .template-container-grid-5,
+    .template-container-grid-6,
+    .template-container-grid-7,
+    .template-container-grid-8,
+    .template-container-grid-9,
+    .template-container-grid-10 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 980px) {
+    .main-container,
+    .oracle-app-shell,
+    body.sidebar-collapsed .main-container,
+    body.sidebar-collapsed .oracle-app-shell,
+    body.oracle-ai-body.sidebar-collapsed .main-container,
+    body.oracle-ai-body.sidebar-collapsed .oracle-app-shell {
+        grid-template-columns: 1fr;
     }
 
-    .oracle-sql-dev-header {
+    .sidebar-container,
+    .oracle-sidebar-container {
+        position: relative;
+
+        width: 100%;
+        height: auto;
+        min-height: auto;
+
+        border-right: 0;
+        border-bottom: 1px solid var(--border-main);
+    }
+
+    .content-container,
+    .oracle-main-container {
+        padding: var(--page-padding-sm, 20px);
+    }
+
+    .oracle-main-header {
         flex-direction: column;
     }
 
-    .oracle-sql-dev-header-actions {
+    .oracle-main-header-actions,
+    .oracle-main-status-card {
+        width: 100%;
         justify-content: flex-start;
-        width: 100%;
     }
 
-    .oracle-sql-dev-link {
-        width: 100%;
+    body.sidebar-collapsed .oracle-sidebar-brand-text,
+    body.sidebar-collapsed .oracle-sidebar-link-subtitle,
+    body.sidebar-collapsed .oracle-sidebar-footer span,
+    body.sidebar-collapsed .oracle-sidebar-footer strong,
+    body.sidebar-collapsed .sidebar-collapse-label,
+    body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-brand-text,
+    body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-link-subtitle,
+    body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-footer span,
+    body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-footer strong,
+    body.oracle-ai-body.sidebar-collapsed .sidebar-collapse-label {
+        display: block;
     }
 
-    .oracle-sql-dev-grid {
+    body.sidebar-collapsed .oracle-sidebar-link,
+    body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-link {
+        align-items: stretch;
+        justify-content: flex-start;
+
+        min-height: auto;
+
+        padding: 13px 14px;
+    }
+
+    body.sidebar-collapsed .oracle-sidebar-link-title,
+    body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-link-title {
+        max-width: none;
+
+        text-align: left;
+        font-size: inherit;
+        line-height: inherit;
+
+        white-space: nowrap;
+    }
+
+    body.sidebar-collapsed .oracle-sidebar-link-title[data-short-label],
+    body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-link-title[data-short-label] {
+        font-size: inherit;
+    }
+
+    body.sidebar-collapsed .oracle-sidebar-link-title[data-short-label]::after,
+    body.oracle-ai-body.sidebar-collapsed .oracle-sidebar-link-title[data-short-label]::after {
+        content: "";
+    }
+
+    .oracle-content-grid {
         grid-template-columns: 1fr;
+    }
+
+    .oracle-half-width,
+    .oracle-third-width,
+    .oracle-two-third-width {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 760px) {
+    .template-container-grid,
+    .template-container-grid-1,
+    .template-container-grid-2,
+    .template-container-grid-3,
+    .template-container-grid-4,
+    .template-container-grid-5,
+    .template-container-grid-6,
+    .template-container-grid-7,
+    .template-container-grid-8,
+    .template-container-grid-9,
+    .template-container-grid-10 {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ==========================================================================
+   14. Optional off-canvas mobile drawer mode
+   --------------------------------------------------------------------------
+   Use only if JavaScript adds:
+       body.use-mobile-drawer
+       body.mobile-sidebar-open
+   ========================================================================== */
+
+@media (max-width: 700px) {
+    body.use-mobile-drawer .main-container,
+    body.use-mobile-drawer .oracle-app-shell {
+        display: block;
+    }
+
+    body.use-mobile-drawer .sidebar-container,
+    body.use-mobile-drawer .oracle-sidebar-container {
+        position: fixed;
+        z-index: 1000;
+        top: 0;
+        left: 0;
+
+        width: min(86vw, var(--sidebar-width, 280px));
+        height: 100vh;
+
+        transform: translateX(-105%);
+
+        border-right: 1px solid var(--border-main);
+        border-bottom: 0;
+
+        transition: transform var(--transition-normal, 180ms ease-in-out);
+    }
+
+    body.use-mobile-drawer.mobile-sidebar-open .sidebar-container,
+    body.use-mobile-drawer.mobile-sidebar-open .oracle-sidebar-container {
+        transform: translateX(0);
+    }
+
+    body.use-mobile-drawer .oracle-mobile-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+
+        background: rgba(0, 0, 0, 0.62);
+    }
+
+    body.use-mobile-drawer.mobile-sidebar-open .oracle-mobile-backdrop {
+        display: block;
     }
 }
