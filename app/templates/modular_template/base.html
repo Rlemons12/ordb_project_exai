@@ -3,54 +3,169 @@
 <head>
     <meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <title>
+        {{ page_title | default("Oracle AI") }}
+    </title>
 
-    <title>{{ page_title | default("Oracle AI Demo") }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    {% if base_css_url %}
-        <link rel="stylesheet" href="{{ base_css_url }}">
-    {% endif %}
+    {% block styles %}
+        {# ------------------------------------------------------------
+           CSS load order:
+           1. base.css
+           2. theme css
+           3. layout css
+           4. page-specific css
+           5. extra css files
+        ------------------------------------------------------------ #}
 
-    {% if theme_css_url %}
-        <link rel="stylesheet" href="{{ theme_css_url }}">
-    {% endif %}
+        {% if base_css_url %}
+            <link rel="stylesheet" href="{{ base_css_url }}">
+        {% endif %}
 
-    {% if layout_css_url %}
-        <link rel="stylesheet" href="{{ layout_css_url }}">
-    {% endif %}
+        {% if theme_css_url %}
+            <link rel="stylesheet" href="{{ theme_css_url }}">
+        {% endif %}
 
-    {% if page_css_url %}
-        <link rel="stylesheet" href="{{ page_css_url }}">
-    {% endif %}
+        {% if layout_css_url %}
+            <link rel="stylesheet" href="{{ layout_css_url }}">
+        {% endif %}
 
-    {% if css_url %}
-        <link rel="stylesheet" href="{{ css_url }}">
-    {% endif %}
+        {% if page_css_url %}
+            <link rel="stylesheet" href="{{ page_css_url }}">
+        {% endif %}
 
-    {% block extra_head %}{% endblock %}
+        {% if css_url %}
+            <link rel="stylesheet" href="{{ css_url }}">
+        {% endif %}
+
+        {% if extra_css_urls %}
+            {% for extra_css_url in extra_css_urls %}
+                <link rel="stylesheet" href="{{ extra_css_url }}">
+            {% endfor %}
+        {% endif %}
+    {% endblock %}
 </head>
 
-<body class="{% block body_class %}oracle-ai-body {{ theme_name | default('theme-oracle-dark') }}{% endblock %}">
+<body class="oracle-ai-body oracle-ai-app-body {{ theme_class | default(theme_name | default('theme-oracle-dark')) }}">
 
-    {% block body %}{% endblock %}
+    <div
+        id="main-container"
+        class="main-container oracle-app-shell"
+    >
+        <aside
+            id="sidebar-container"
+            class="sidebar-container oracle-sidebar-container"
+            aria-label="Oracle AI navigation"
+        >
+            {% block sidebar %}
+                {% include "modular_template/partials/sidebar.html" %}
+            {% endblock %}
+        </aside>
 
-    {% block page_config %}{% endblock %}
+        <main
+            id="content-container"
+            class="content-container oracle-main-container"
+            aria-label="Oracle AI main content"
+        >
+            {% block page_header %}
+                {% include "modular_template/partials/page_header.html" %}
+            {% endblock %}
 
-    {% if layout_js_url %}
-        <script src="{{ layout_js_url }}"></script>
-    {% endif %}
+            <section
+                id="partial-container"
+                class="page-content-container oracle-partial-container"
+                aria-label="Oracle AI page content"
+                data-current-page="{{ active_page | default('home') }}"
+            >
+                {% block content_container %}
+
+                    {# ------------------------------------------------------------
+                       Option 1:
+                       Render one direct initial partial.
+
+                       This is best for the "same page" experience where the
+                       sidebar/header stay visible and JavaScript swaps only
+                       this partial-container.
+                    ------------------------------------------------------------ #}
+
+                    {% if initial_content_template is defined and initial_content_template %}
+                        {% include initial_content_template %}
+
+                    {# ------------------------------------------------------------
+                       Option 2:
+                       Render one of the reusable 1-10 content container layouts.
+
+                       The route controls:
+                           container_count
+                           content_slots
+                    ------------------------------------------------------------ #}
+
+                    {% else %}
+                        {% set selected_container_count = container_count | default(1) | int %}
+
+                        {% if selected_container_count < 1 %}
+                            {% set selected_container_count = 1 %}
+                        {% endif %}
+
+                        {% if selected_container_count > 10 %}
+                            {% set selected_container_count = 10 %}
+                        {% endif %}
+
+                        {% set content_container_template =
+                            "modular_template/content_containers/container_"
+                            ~ selected_container_count
+                            ~ ".html"
+                        %}
+
+                        {% include content_container_template %}
+                    {% endif %}
+
+                {% endblock %}
+            </section>
+        </main>
+    </div>
+
+    {% block scripts %}
+    {# ------------------------------------------------------------
+       Page-specific primary JS.
+    ------------------------------------------------------------ #}
 
     {% if js_url %}
         <script src="{{ js_url }}"></script>
     {% endif %}
 
-    {% if page_js_url %}
-        <script src="{{ page_js_url }}"></script>
+    {# ------------------------------------------------------------
+       Modular content router.
+       This swaps only #partial-container.
+    ------------------------------------------------------------ #}
+
+    {% if modular_router_js_url is defined and modular_router_js_url %}
+        <script src="{{ modular_router_js_url }}"></script>
+    {% else %}
+        <script src="/oracle-ai/assets/js/modular_template/modular_content_router.js"></script>
     {% endif %}
 
-    {% block extra_scripts %}{% endblock %}
+    {# ------------------------------------------------------------
+       Sidebar collapse toggle.
+       This toggles body.sidebar-collapsed so the content-container expands.
+    ------------------------------------------------------------ #}
+
+    {% if sidebar_toggle_js_url is defined and sidebar_toggle_js_url %}
+        <script src="{{ sidebar_toggle_js_url }}"></script>
+    {% else %}
+        <script src="/oracle-ai/assets/js/modular_template/sidebar_toggle.js"></script>
+    {% endif %}
+
+    {# ------------------------------------------------------------
+       Extra JS files.
+    ------------------------------------------------------------ #}
+
+    {% if extra_js_urls %}
+        {% for extra_js_url in extra_js_urls %}
+            <script src="{{ extra_js_url }}"></script>
+        {% endfor %}
+    {% endif %}
+{% endblock %}
 </body>
 </html>
