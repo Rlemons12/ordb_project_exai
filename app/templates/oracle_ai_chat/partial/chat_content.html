@@ -1,0 +1,101 @@
+<section class="exai-layout">
+    <section class="exai-card exai-chat-card">
+        <div class="exai-card-header">
+            <h2>Ask Oracle</h2>
+
+            <button
+                type="button"
+                id="schema-button"
+                class="exai-secondary-button"
+            >
+                Load Schema Summary
+            </button>
+        </div>
+
+        <form id="oracle-ai-form" class="exai-form">
+            <label for="question">Question</label>
+
+            <textarea
+                id="question"
+                name="question"
+                rows="4"
+                placeholder="Example: What colours are in the database? Show the name, abbreviation, and hex code."
+            >What colours are in the database? Show the name, abbreviation, and hex code.</textarea>
+
+            <div class="exai-options">
+                <label class="exai-checkbox">
+                    <input
+                        type="checkbox"
+                        id="include-sample-rows"
+                        checked
+                    >
+                    Include sample rows in schema context
+                </label>
+
+                <label>
+                    Max tables
+                    <input
+                        type="number"
+                        id="max-tables"
+                        value="50"
+                        min="1"
+                        max="500"
+                    >
+                </label>
+
+                <label>
+                    Max result rows
+                    <input
+                        type="number"
+                        id="max-result-rows"
+                        value="100"
+                        min="1"
+                        max="1000"
+                    >
+                </label>
+            </div>
+
+            <div class="exai-actions">
+                <button
+                    type="submit"
+                    id="ask-button"
+                    class="exai-primary-button"
+                >
+                    Ask AI
+                </button>
+
+                <button
+                    type="button"
+                    id="clear-button"
+                    class="exai-secondary-button"
+                >
+                    Clear
+                </button>
+            </div>
+        </form>
+
+        <div id="loading-banner" class="exai-loading is-hidden">
+            Working through schema context, SQL generation, Oracle execution, and explanation...
+        </div>
+    </section>
+
+    <section class="exai-card exai-answer-card">
+        <div class="exai-card-header">
+            <h2>Answer</h2>
+            <span id="request-id" class="exai-muted"></span>
+        </div>
+
+        <div id="answer-output" class="exai-answer-empty">
+            Ask a question to see the generated SQL, rows, and explanation.
+        </div>
+    </section>
+</section>
+
+<section class="exai-card exai-schema-card">
+    <div class="exai-card-header">
+        <h2>Schema Summary</h2>
+        <span class="exai-muted">Optional developer view</span>
+    </div>
+
+    <pre id="schema-output" class="exai-pre">Click "Load Schema Summary" to inspect visible schema context.</pre>
+</section>
