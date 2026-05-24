@@ -2,9 +2,31 @@
 
 `ordb_project_exai` is a standalone Oracle database AI experimentation project.
 
-The project is currently focused on proving that a Python application can connect to an Oracle demo database, inspect schema metadata, run SQL, and perform full-access database experiments such as creating, inserting into, selecting from, and dropping test tables.
-
 This project is separate from EMTAC.
+
+The project proves that a Python application can connect to an Oracle demo database, inspect schema metadata, run SQL, perform full-access database experiments, and use an AI provider to generate SQL from natural-language questions.
+
+The current working AI flow is **Option 2**:
+
+```text
+User question
+  ↓
+OracleAICoordinator
+  ↓
+OracleAIOrchestrator
+  ↓
+OracleSchemaService builds schema context
+  ↓
+AI provider generates Oracle SQL
+  ↓
+OracleQueryService executes SQL
+  ↓
+AI provider explains the result
+```
+
+SQLcl MCP is still useful for external AI coding tools such as Codex, Cline, Claude Code, Cursor, or Gemini CLI, but the Python application itself uses the internal service layer.
+
+---
 
 ## Project Purpose
 
@@ -14,56 +36,99 @@ Current goals:
 
 - Connect to an Oracle demo database using Python.
 - Load Oracle configuration from a project-level `.env` file.
+- Use a normal custom project logger named `exai`.
 - Inspect schemas, tables, columns, primary keys, row counts, and sample rows.
 - Support normal Oracle identifiers such as `COLOUR`.
 - Support quoted Oracle identifiers such as `"My Favorite saying"`.
 - Run read-only SQL queries.
 - Run full-access SQL statements against the demo database.
-- Prepare the project for a later AI coordinator/orchestrator layer that can translate natural-language requests into SQL.
+- Reset the demo schema back to a fresh no-table state.
+- Recreate the baseline demo schema on another computer or database.
+- Let an AI provider generate Oracle SQL from natural-language questions.
+- Execute AI-generated SQL through the project-controlled `OracleQueryService`.
+- Ask the AI provider to explain SQL results.
 
 Future goals:
 
-- Add an AI service that generates SQL from user questions.
-- Add an orchestrator that builds schema context before asking the AI for SQL.
-- Add a coordinator that receives user-facing requests.
+- Add Claude, Gemini, and Grok provider classes.
 - Add a Flask interface for asking database questions.
 - Add audit logging for AI-generated SQL.
-- Add optional safety modes such as read-only mode, approval mode, and full-access demo mode.
+- Add safety modes such as read-only mode, approval-required mode, and full-access demo mode.
+- Add generated DDL support from Oracle Data Modeler.
+- Add optional remote MCP wrapper around the project service layer.
+
+---
 
 ## Current Project Structure
 
 ```text
 ordb_project_exai
 ├── .env
+├── .env.example
+├── .gitignore
 ├── main.py
 ├── README.md
 ├── ARCHITECTURE.md
+├── SQLCL_MCP_SETUP.md
+├── SETUP_FROM_GIT.md
+├── requirements.txt
+├── install_option_2_ai_layer.py
+├── option_2_ai_layer.zip
+│
 ├── app
 │   ├── __init__.py
 │   ├── blueprints
 │   ├── css
 │   ├── js
-│   ├── models
-│   │   ├── configuration
-│   │   │   ├── __init__.py
-│   │   │   └── oracle_config.py
-│   │   ├── coordinator
-│   │   ├── orchestrator
-│   │   └── service
-│   │       ├── __init__.py
-│   │       └── oracle
-│   │           ├── __init__.py
-│   │           ├── connection_service.py
-│   │           ├── schema_service.py
-│   │           └── query_service.py
-│   └── templates
-└── tests_scripts
-    └── test_oracle_query_service.py
+│   ├── templates
+│   │
+│   └── models
+│       ├── configuration
+│       │   ├── __init__.py
+│       │   ├── logger_config.py
+│       │   └── oracle_config.py
+│       │
+│       ├── coordinator
+│       │   ├── __init__.py
+│       │   └── ai
+│       │       ├── __init__.py
+│       │       └── oracle_ai_coordinator.py
+│       │
+│       ├── orchestrator
+│       │   ├── __init__.py
+│       │   └── ai
+│       │       ├── __init__.py
+│       │       └── oracle_ai_orchestrator.py
+│       │
+│       └── service
+│           ├── __init__.py
+│           │
+│           ├── ai
+│           │   ├── __init__.py
+│           │   ├── base_ai_provider.py
+│           │   └── openai_ai_provider.py
+│           │
+│           └── oracle
+│               ├── __init__.py
+│               ├── connection_service.py
+│               ├── query_service.py
+│               └── schema_service.py
+│
+├── tests_scripts
+│   ├── reset_oracle_demo_schema.py
+│   ├── setup_oracle_demo_schema.py
+│   ├── test_oracle_ai_option_2.py
+│   └── test_oracle_query_service.py
+│
+└── logs
+    └── exai.log
 ```
+
+---
 
 ## Current Working Layers
 
-The current working chain is:
+The core database service chain is:
 
 ```text
 .env
@@ -79,6 +144,28 @@ query_service.py
 Oracle demo database
 ```
 
+The current AI chain is:
+
+```text
+.env
+  ↓
+logger_config.py
+  ↓
+openai_ai_provider.py
+  ↓
+oracle_ai_coordinator.py
+  ↓
+oracle_ai_orchestrator.py
+  ↓
+schema_service.py
+  ↓
+query_service.py
+  ↓
+Oracle demo database
+```
+
+---
+
 ## Environment Setup
 
 From the project root:
@@ -90,6 +177,14 @@ cd C:\Users\cetax\PycharmProjects\ordb_project_exai
 Create or activate the virtual environment:
 
 ```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+If PowerShell blocks activation:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
 ```
 
@@ -97,24 +192,31 @@ Install required packages:
 
 ```powershell
 python -m pip install --upgrade pip
-python -m pip install oracledb python-dotenv flask
+python -m pip install -r requirements.txt
 ```
 
-Optional:
+If `requirements.txt` has not been updated yet:
 
 ```powershell
+python -m pip install oracledb python-dotenv flask openai
 python -m pip freeze > requirements.txt
 ```
+
+---
 
 ## Environment Variables
 
 The project expects a `.env` file in the project root.
 
-Example:
+Do not commit `.env`.
+
+Use `.env.example` as the safe committed template.
+
+Example `.env`:
 
 ```env
 # =========================
-# Oracle Database Connection (Logical)
+# Oracle Database Connection
 # =========================
 
 ORACLE_HOST=localhost
@@ -122,24 +224,34 @@ ORACLE_PORT=1521
 ORACLE_SERVICE=FREEPDB1
 ORACLE_PDB=FREEPDB1
 
-# Application schema
 ORACLE_USER=devuser
 ORACLE_PASSWORD=devpass
-
-# =========================
-# Oracle Connection Strings
-# =========================
 
 ORACLE_DSN=localhost:1521/FREEPDB1
 ORACLE_JDBC_URL=jdbc:oracle:thin:@//localhost:1521/FREEPDB1
 
+
 # =========================
-# ORDS Configuration
+# ORDS / Oracle Database Actions
 # =========================
 
+# ORDS base URL
 ORDS_BASE_URL=http://localhost:8080/ords
+
+# REST-enabled schema path for DEVUSER.
+# This should match the ORDS schema alias.
 ORDS_SCHEMA_PATH=/dev
+
+# Existing demo endpoint used by ORDS examples
 ORDS_COLOURS_ENDPOINT=/colours
+
+# Database Actions / SQL Developer Web path
+ORDS_DATABASE_ACTIONS_PATH=/sql-developer
+
+# Optional full override.
+# Only use this if you want to bypass ORDS_BASE_URL + ORDS_DATABASE_ACTIONS_PATH.
+# ORDS_DATABASE_ACTIONS_URL=http://localhost:8080/ords/sql-developer
+
 
 # =========================
 # Java / SQLcl
@@ -148,6 +260,39 @@ ORDS_COLOURS_ENDPOINT=/colours
 JAVA_HOME=C:\java\jdk-17.0.17
 SQLCL_JDBC=thin
 
+
+# =========================
+# AI Provider Configuration
+# =========================
+
+AI_PROVIDER=openai
+
+OPENAI_API_KEY=your_real_openai_key_here
+OPENAI_MODEL=gpt-5.5
+
+ANTHROPIC_API_KEY=
+ANTHROPIC_MODEL=claude-sonnet-4-5
+
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-pro
+
+XAI_API_KEY=
+XAI_MODEL=grok-4
+
+
+# =========================
+# Logging
+# =========================
+
+LOG_NAME=exai
+LOG_LEVEL=INFO
+LOG_TO_CONSOLE=true
+LOG_FILE=logs/exai.log
+LOG_MAX_BYTES=5242880
+LOG_BACKUP_COUNT=5
+LOG_INCLUDE_REQUEST_ID=false
+
+
 # =========================
 # Environment Marker
 # =========================
@@ -155,7 +300,336 @@ SQLCL_JDBC=thin
 APP_ENV=local
 ```
 
-Do not commit real database passwords to a public repository.
+---
+
+## Git Safety
+
+Your `.gitignore` should exclude real secrets and local environment folders:
+
+```gitignore
+.env
+.env.*
+!.env.example
+.venv/
+.idea/
+__pycache__/
+logs/
+*.log
+```
+
+Before committing:
+
+```powershell
+git status
+git check-ignore -v .env
+```
+
+`.env` should be ignored.
+
+---
+
+## Oracle REST Data Services (ORDS) Setup
+
+ORDS is used in this project as the Oracle-native web and REST layer.
+
+In this project, ORDS supports:
+
+- Oracle Database Actions / SQL Developer Web.
+- REST-enabled access to the demo schema.
+- Browser-based Oracle SQL Developer access.
+- Future REST endpoints that can be called by the Flask app, MCP tools, or external clients.
+
+The current local ORDS install is expected here:
+
+```text
+C:\oracle\ords
+```
+
+The ORDS executable is expected here:
+
+```text
+C:\oracle\ords\bin\ords.exe
+```
+
+### Check ORDS Version
+
+From PowerShell:
+
+```powershell
+cd C:\oracle\ords
+.\bin\ords.exe --version
+```
+
+Expected result should show an ORDS version, for example:
+
+```text
+Oracle REST Data Services 25.4.0
+```
+
+### Start ORDS
+
+From PowerShell:
+
+```powershell
+cd C:\oracle\ords
+.\bin\ords.exe serve
+```
+
+Leave this PowerShell window open while ORDS is running.
+
+### Verify ORDS Is Running
+
+Open a second PowerShell window and run:
+
+```powershell
+Test-NetConnection 127.0.0.1 -Port 8080
+```
+
+Expected:
+
+```text
+TcpTestSucceeded : True
+```
+
+Then test the ORDS landing page:
+
+```powershell
+Invoke-WebRequest "http://localhost:8080/ords/" -UseBasicParsing
+```
+
+Expected:
+
+```text
+StatusCode : 200
+```
+
+You can also open this in a browser:
+
+```text
+http://localhost:8080/ords/
+```
+
+### Verify the DEVUSER Database Login
+
+SQLcl may try to use the OCI/thick driver if the environment is configured that way. For this project, force thin mode when testing local credentials:
+
+```powershell
+sql -thin devuser/devpass@//localhost:1521/FREEPDB1
+```
+
+Expected result:
+
+```text
+Connected to:
+Oracle AI Database 26ai Free
+```
+
+At the SQL prompt, verify the user and PDB:
+
+```sql
+SHOW USER;
+
+SELECT SYS_CONTEXT('USERENV', 'CON_NAME') AS CONTAINER_NAME
+FROM dual;
+```
+
+Expected:
+
+```text
+USER is "DEVUSER"
+CONTAINER_NAME
+----------------
+FREEPDB1
+```
+
+If SQLcl fails with this kind of error:
+
+```text
+jdbc:oracle:oci8
+Incompatible version of libocijdbc
+```
+
+use the `-thin` option:
+
+```powershell
+sql -thin devuser/devpass@//localhost:1521/FREEPDB1
+```
+
+### REST-Enable DEVUSER for ORDS
+
+Once connected as `DEVUSER` to `FREEPDB1`, run this at the `SQL>` prompt:
+
+```sql
+BEGIN
+  ORDS.ENABLE_SCHEMA(
+    p_enabled             => TRUE,
+    p_url_mapping_type    => 'BASE_PATH',
+    p_url_mapping_pattern => 'dev',
+    p_auto_rest_auth      => TRUE
+  );
+
+  COMMIT;
+END;
+/
+```
+
+Important:
+
+- Use `p_enabled`, not `p_enable`.
+- Use `dev` for the URL mapping pattern.
+- The project `.env` value should be `ORDS_SCHEMA_PATH=/dev`.
+- The Database Actions sign-in **Path** value should be `dev`, without the slash.
+
+Expected result:
+
+```text
+PL/SQL procedure successfully completed.
+```
+
+### Restart ORDS After Schema Enablement
+
+A restart is not always required for schema enablement, but it is useful during local setup.
+
+Stop ORDS in the ORDS PowerShell window:
+
+```text
+Ctrl + C
+```
+
+Start it again:
+
+```powershell
+cd C:\oracle\ords
+.\bin\ords.exe serve
+```
+
+### Open Oracle Database Actions / SQL Developer Web
+
+Direct schema URL:
+
+```text
+http://localhost:8080/ords/dev/_sdw/
+```
+
+Generic Database Actions URL:
+
+```text
+http://localhost:8080/ords/sql-developer
+```
+
+If using the generic URL, sign in with:
+
+```text
+Username: devuser
+Password: devpass
+Advanced > Path: dev
+```
+
+Use:
+
+```text
+dev
+```
+
+Do not use:
+
+```text
+/dev
+```
+
+### Flask App Integration
+
+The Flask app reads ORDS settings from `oracle_config.py`, which reads the project `.env`.
+
+Relevant `.env` values:
+
+```env
+ORDS_BASE_URL=http://localhost:8080/ords
+ORDS_SCHEMA_PATH=/dev
+ORDS_DATABASE_ACTIONS_PATH=/sql-developer
+```
+
+The Flask app can build:
+
+```text
+ORDS schema URL:
+http://localhost:8080/ords/dev
+
+Oracle Database Actions URL:
+http://localhost:8080/ords/sql-developer
+```
+
+The Oracle AI Flask view should expose:
+
+```text
+http://127.0.0.1:5000/oracle-ai/sql-developer
+```
+
+The ORDS status check route should expose:
+
+```text
+http://127.0.0.1:5000/oracle-ai/ords/status
+```
+
+The SQL Developer Web view should open Database Actions in a new tab instead of using an iframe.
+
+Reason:
+
+```text
+ORDS returns X-Frame-Options: SAMEORIGIN
+```
+
+Because Flask runs on port `5000` and ORDS runs on port `8080`, the browser treats them as different origins.
+
+---
+
+
+## Custom Logger
+
+The project uses a normal custom logger named:
+
+```text
+exai
+```
+
+Logger configuration file:
+
+```text
+app\models\configuration\logger_config.py
+```
+
+The log file defaults to:
+
+```text
+logs\exai.log
+```
+
+Use it in project files like this:
+
+```python
+from app.models.configuration import get_exai_logger
+
+logger = get_exai_logger(__name__)
+
+logger.info("Starting Oracle AI workflow.")
+logger.exception("Oracle AI workflow failed.")
+```
+
+Child loggers will look like:
+
+```text
+exai.app.models.orchestrator.ai.oracle_ai_orchestrator
+exai.app.models.coordinator.ai.oracle_ai_coordinator
+exai.app.models.service.ai.openai_ai_provider
+```
+
+Test logger configuration:
+
+```powershell
+python -c "from app.models.configuration import configure_logging, get_exai_logger; configure_logging(force=True); logger = get_exai_logger(); logger.info('General exai logger test successful')"
+```
+
+---
 
 ## Oracle SQLcl MCP Setup
 
@@ -167,6 +641,12 @@ The local SQLcl MCP server has been tested with:
 & "C:\oracle\sqlcl\bin\sql.bat" -mcp
 ```
 
+For full-access demo MCP mode:
+
+```powershell
+& "C:\oracle\sqlcl\bin\sql.bat" -R 0 -mcp
+```
+
 Expected successful startup output:
 
 ```text
@@ -174,7 +654,7 @@ MCP Server started successfully
 Press Ctrl+C to stop the server
 ```
 
-For an MCP client that uses JSON configuration, use:
+For JSON-based MCP clients:
 
 ```json
 {
@@ -184,6 +664,8 @@ For an MCP client that uses JSON configuration, use:
       "args": [
         "/c",
         "C:\\oracle\\sqlcl\\bin\\sql.bat",
+        "-R",
+        "0",
         "-mcp"
       ],
       "disabled": false
@@ -192,17 +674,24 @@ For an MCP client that uses JSON configuration, use:
 }
 ```
 
-For Codex TOML configuration, use:
+For Codex TOML configuration:
 
 ```toml
 [mcp_servers.oracle-sqlcl-demo-full-access]
 command = "cmd.exe"
-args = ["/c", "C:\\oracle\\sqlcl\\bin\\sql.bat", "-mcp"]
+args = ["/c", "C:\\oracle\\sqlcl\\bin\\sql.bat", "-R", "0", "-mcp"]
 enabled = true
 startup_timeout_sec = 30
 tool_timeout_sec = 120
-default_tools_approval_mode = "prompt"
 ```
+
+Detailed setup is in:
+
+```text
+SQLCL_MCP_SETUP.md
+```
+
+---
 
 ## Main Services
 
@@ -219,7 +708,7 @@ Purpose:
 - Loads the project `.env`.
 - Exposes a typed `OracleConfig` object.
 - Provides a safe config summary that excludes the password.
-- Builds useful derived values such as ORDS URLs.
+- Builds useful derived values such as ORDS schema URLs and Database Actions URLs.
 
 Typical usage:
 
@@ -230,8 +719,12 @@ config = get_oracle_config()
 
 print(config.oracle_user)
 print(config.oracle_dsn)
+print(config.ords_schema_url)
 print(config.ords_colours_url)
+print(config.ords_database_actions_url)
 ```
+
+---
 
 ### Oracle Connection Service
 
@@ -258,6 +751,8 @@ result = svc.test_connection()
 
 print(result.rows)
 ```
+
+---
 
 ### Oracle Schema Service
 
@@ -286,16 +781,16 @@ from app.models.service import OracleSchemaService
 
 svc = OracleSchemaService()
 
-tables = svc.list_accessible_tables(owner="DEVUSER")
-print(tables.rows)
-
 summary = svc.build_schema_summary(
     owner="DEVUSER",
     include_sample_rows=True,
     sample_row_count=3,
 )
+
 print(summary)
 ```
+
+---
 
 ### Oracle Query Service
 
@@ -323,44 +818,212 @@ result = svc.run_sql("SELECT * FROM DEVUSER.COLOUR")
 print(result.rows)
 ```
 
-Full-access test example:
+---
 
-```python
-from app.models.service import OracleQueryService
+## AI Service Layer
 
-svc = OracleQueryService()
+### Base AI Provider
 
-create_sql = """
-CREATE TABLE DEVUSER.AI_TEST_LOG (
-    ID NUMBER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-    NOTE VARCHAR2(200),
-    CREATED_AT TIMESTAMP DEFAULT SYSTIMESTAMP
-)
-"""
+File:
 
-svc.run_sql(create_sql)
-
-svc.run_sql(
-    "INSERT INTO DEVUSER.AI_TEST_LOG (NOTE) VALUES (:note)",
-    binds={"note": "Demo full-access test row"},
-)
-
-result = svc.run_sql("SELECT * FROM DEVUSER.AI_TEST_LOG")
-print(result.rows)
-
-svc.run_sql("DROP TABLE DEVUSER.AI_TEST_LOG PURGE")
+```text
+app\models\service\ai\base_ai_provider.py
 ```
 
-## Running the Test Script
+Purpose:
 
-Run from the project root:
+- Defines the common provider interface.
+- Defines `AIProviderResponse`.
+- Allows OpenAI, Claude, Gemini, and Grok providers to share the same interface.
+
+Core method:
+
+```python
+generate_text(system_prompt: str, user_prompt: str) -> AIProviderResponse
+```
+
+---
+
+### OpenAI Provider
+
+File:
+
+```text
+app\models\service\ai\openai_ai_provider.py
+```
+
+Purpose:
+
+- Uses the OpenAI API to generate text.
+- Reads `OPENAI_API_KEY` and `OPENAI_MODEL` from `.env`.
+- Returns standardized `AIProviderResponse` objects.
+- Uses the `exai` logger.
+
+Typical usage:
+
+```python
+from app.models.service.ai import OpenAIAIProvider
+
+provider = OpenAIAIProvider()
+response = provider.generate_text(
+    system_prompt="You are helpful.",
+    user_prompt="Say hello.",
+)
+
+print(response.text)
+```
+
+---
+
+## AI Coordinator and Orchestrator
+
+### Oracle AI Coordinator
+
+File:
+
+```text
+app\models\coordinator\ai\oracle_ai_coordinator.py
+```
+
+Purpose:
+
+- Accepts a user-facing question.
+- Normalizes and validates the question.
+- Calls `OracleAIOrchestrator`.
+- Returns `OracleAIResponse`.
+
+Typical usage:
+
+```python
+from app.models.coordinator import OracleAICoordinator
+
+coordinator = OracleAICoordinator()
+
+response = coordinator.ask(
+    "What colours are in the database?"
+)
+
+print(response.generated_sql)
+print(response.rows)
+print(response.explanation)
+```
+
+---
+
+### Oracle AI Orchestrator
+
+File:
+
+```text
+app\models\orchestrator\ai\oracle_ai_orchestrator.py
+```
+
+Purpose:
+
+- Builds schema context.
+- Asks the AI provider to generate Oracle SQL.
+- Classifies generated SQL.
+- Executes generated SQL through `OracleQueryService`.
+- Asks the AI provider to explain the result.
+- Returns a structured `OracleAIResponse`.
+
+Current response object:
+
+```python
+@dataclass
+class OracleAIResponse:
+    success: bool
+    question: str
+    generated_sql: str | None
+    sql_command_type: str | None
+    rows: list[dict[str, Any]]
+    row_count: int
+    explanation: str
+    schema_owner: str
+    error: str | None = None
+```
+
+---
+
+## Database Setup Scripts
+
+### Reset Demo Schema
+
+File:
+
+```text
+tests_scripts\reset_oracle_demo_schema.py
+```
+
+Purpose:
+
+- Drops all tables owned by the connected `.env` Oracle user.
+- Purges the recycle bin.
+- Verifies the schema is empty.
+
+Dry run:
 
 ```powershell
-cd C:\Users\cetax\PycharmProjects\ordb_project_exai
+python .\tests_scripts\reset_oracle_demo_schema.py
+```
+
+Execute:
+
+```powershell
+python .\tests_scripts\reset_oracle_demo_schema.py --execute
+```
+
+---
+
+### Setup Demo Schema
+
+File:
+
+```text
+tests_scripts\setup_oracle_demo_schema.py
+```
+
+Purpose:
+
+- Creates baseline demo tables.
+- Seeds sample rows.
+- Does not hardcode `DEVUSER`; it uses `ORACLE_USER` from `.env`.
+
+Dry run:
+
+```powershell
+python .\tests_scripts\setup_oracle_demo_schema.py
+```
+
+Execute:
+
+```powershell
+python .\tests_scripts\setup_oracle_demo_schema.py --execute
+```
+
+Drop/recreate baseline demo tables:
+
+```powershell
+python .\tests_scripts\setup_oracle_demo_schema.py --execute --drop-existing
+```
+
+Create tables without seed data:
+
+```powershell
+python .\tests_scripts\setup_oracle_demo_schema.py --execute --no-seed
+```
+
+---
+
+## Running Tests
+
+### Test Oracle Service Layer
+
+```powershell
 python .\tests_scripts\test_oracle_query_service.py
 ```
 
-The test script validates:
+This validates:
 
 1. Selecting from `DEVUSER.COLOUR`.
 2. Selecting from the quoted table `"DEVUSER"."My Favorite saying"`.
@@ -375,9 +1038,47 @@ A clean run should end with:
 All Oracle service tests completed
 ```
 
+---
+
+### Test AI Option 2 Layer
+
+```powershell
+python .\tests_scripts\test_oracle_ai_option_2.py
+```
+
+Default question:
+
+```text
+What colours are in the database? Show the name, abbreviation, and hex code.
+```
+
+Expected generated SQL should be similar to:
+
+```sql
+SELECT NAME, ABBR, HEX_CODE
+FROM DEVUSER.COLOUR
+ORDER BY NAME
+```
+
+Expected result:
+
+```text
+Blue    BLU    #0000FF
+Red     RED    #FF0000
+Yellow  YEL    #FFFF00
+```
+
+You can pass your own question:
+
+```powershell
+python .\tests_scripts\test_oracle_ai_option_2.py --question "What tables are in the schema?"
+```
+
+---
+
 ## Current Verified Demo Tables
 
-The current `DEVUSER` schema has at least these tables:
+The baseline setup creates:
 
 ```text
 COLOUR
@@ -396,7 +1097,7 @@ CREATED_AT
 ABBR
 ```
 
-Known sample rows include:
+Known sample rows:
 
 ```text
 Red     #FF0000  RED
@@ -420,6 +1121,8 @@ Known sample row:
 AI can write to quoted Oracle tables
 ```
 
+---
+
 ## Quoted Oracle Table Names
 
 Oracle quoted identifiers require exact casing and double quotes.
@@ -429,8 +1132,6 @@ Example:
 ```sql
 SELECT * FROM "DEVUSER"."My Favorite saying"
 ```
-
-This project supports quoted identifiers inside the schema service and query service.
 
 For PowerShell testing, use a script block instead of `python -c` when SQL contains double quotes:
 
@@ -447,6 +1148,56 @@ result = svc.run_sql(sql)
 print(result.rows)
 '@ | python
 ```
+
+---
+
+## Recreate From Git
+
+A Git clone alone does not recreate:
+
+```text
+.venv
+.env
+Oracle database
+Oracle application user
+Java
+SQLcl
+SQLcl saved MCP connection
+PyCharm interpreter
+```
+
+Recreate workflow:
+
+```powershell
+git clone <your-repo-url> ordb_project_exai
+cd C:\Users\cetax\PycharmProjects\ordb_project_exai
+
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+
+Copy-Item .env.example .env
+```
+
+Edit `.env`.
+
+Then:
+
+```powershell
+python .\tests_scripts\setup_oracle_demo_schema.py --execute
+python .\tests_scripts\test_oracle_query_service.py
+python .\tests_scripts\test_oracle_ai_option_2.py
+```
+
+Detailed instructions are in:
+
+```text
+SETUP_FROM_GIT.md
+```
+
+---
 
 ## Development Notes
 
@@ -482,32 +1233,7 @@ Before adapting this project to a non-demo or production database, add:
 - Rollback or transaction controls for DML.
 - Separate database user with minimum permissions.
 
-## Recommended Next Step
-
-The next layer should be:
-
-```text
-app\models\orchestrator\oracle_ai_orchestrator.py
-app\models\coordinator\oracle_ai_coordinator.py
-```
-
-The intended future flow is:
-
-```text
-User question
-  ↓
-Coordinator
-  ↓
-Orchestrator
-  ↓
-Schema summary from OracleSchemaService
-  ↓
-AI-generated SQL
-  ↓
-OracleQueryService executes SQL
-  ↓
-Rows and explanation returned to user
-```
+---
 
 ## Project Status
 
@@ -516,10 +1242,35 @@ Current status:
 ```text
 Database connection: working
 Configuration loading: working
+Custom exai logger: working
+Schema reset script: working
+Schema setup script: working
 Schema inspection: working
 Quoted table support: working
 SQL classification: working
 Read query execution: working
 Full-access demo execution: working
-Test script: clean pass
+OpenAI provider: working
+AI SQL generation: working
+AI SQL execution: working
+AI result explanation: working
+Option 2 test script: working
+SQLcl MCP docs: created
+Recreate-from-Git docs: created
+ORDS install detected: working
+ORDS local server on port 8080: working
+ORDS DEVUSER schema enablement: working
+Oracle Database Actions / SQL Developer Web setup: in progress
 ```
+
+---
+
+## Recommended Next Steps
+
+1. Add an AI audit table.
+2. Log every question, generated SQL, command type, result count, and error.
+3. Add provider classes for Claude, Gemini, and Grok.
+4. Add Flask routes for asking questions from a browser.
+5. Add Flask SQL Developer Web launch page for ORDS Database Actions.
+6. Add read-only and approval-required safety modes.
+6. Save Oracle Data Modeler DDL under `database_design/ddl`.

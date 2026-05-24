@@ -232,12 +232,25 @@ ORACLE_JDBC_URL=jdbc:oracle:thin:@//localhost:1521/FREEPDB1
 
 
 # =========================
-# ORDS Configuration
+# ORDS / Oracle Database Actions
 # =========================
 
+# ORDS base URL
 ORDS_BASE_URL=http://localhost:8080/ords
+
+# REST-enabled schema path for DEVUSER.
+# This should match the ORDS schema alias.
 ORDS_SCHEMA_PATH=/dev
+
+# Existing demo endpoint used by ORDS examples
 ORDS_COLOURS_ENDPOINT=/colours
+
+# Database Actions / SQL Developer Web path
+ORDS_DATABASE_ACTIONS_PATH=/sql-developer
+
+# Optional full override.
+# Only use this if you want to bypass ORDS_BASE_URL + ORDS_DATABASE_ACTIONS_PATH.
+# ORDS_DATABASE_ACTIONS_URL=http://localhost:8080/ords/sql-developer
 
 
 # =========================
@@ -314,6 +327,262 @@ git check-ignore -v .env
 `.env` should be ignored.
 
 ---
+
+## Oracle REST Data Services (ORDS) Setup
+
+ORDS is used in this project as the Oracle-native web and REST layer.
+
+In this project, ORDS supports:
+
+- Oracle Database Actions / SQL Developer Web.
+- REST-enabled access to the demo schema.
+- Browser-based Oracle SQL Developer access.
+- Future REST endpoints that can be called by the Flask app, MCP tools, or external clients.
+
+The current local ORDS install is expected here:
+
+```text
+C:\oracle\ords
+```
+
+The ORDS executable is expected here:
+
+```text
+C:\oracle\ords\bin\ords.exe
+```
+
+### Check ORDS Version
+
+From PowerShell:
+
+```powershell
+cd C:\oracle\ords
+.\bin\ords.exe --version
+```
+
+Expected result should show an ORDS version, for example:
+
+```text
+Oracle REST Data Services 25.4.0
+```
+
+### Start ORDS
+
+From PowerShell:
+
+```powershell
+cd C:\oracle\ords
+.\bin\ords.exe serve
+```
+
+Leave this PowerShell window open while ORDS is running.
+
+### Verify ORDS Is Running
+
+Open a second PowerShell window and run:
+
+```powershell
+Test-NetConnection 127.0.0.1 -Port 8080
+```
+
+Expected:
+
+```text
+TcpTestSucceeded : True
+```
+
+Then test the ORDS landing page:
+
+```powershell
+Invoke-WebRequest "http://localhost:8080/ords/" -UseBasicParsing
+```
+
+Expected:
+
+```text
+StatusCode : 200
+```
+
+You can also open this in a browser:
+
+```text
+http://localhost:8080/ords/
+```
+
+### Verify the DEVUSER Database Login
+
+SQLcl may try to use the OCI/thick driver if the environment is configured that way. For this project, force thin mode when testing local credentials:
+
+```powershell
+sql -thin devuser/devpass@//localhost:1521/FREEPDB1
+```
+
+Expected result:
+
+```text
+Connected to:
+Oracle AI Database 26ai Free
+```
+
+At the SQL prompt, verify the user and PDB:
+
+```sql
+SHOW USER;
+
+SELECT SYS_CONTEXT('USERENV', 'CON_NAME') AS CONTAINER_NAME
+FROM dual;
+```
+
+Expected:
+
+```text
+USER is "DEVUSER"
+CONTAINER_NAME
+----------------
+FREEPDB1
+```
+
+If SQLcl fails with this kind of error:
+
+```text
+jdbc:oracle:oci8
+Incompatible version of libocijdbc
+```
+
+use the `-thin` option:
+
+```powershell
+sql -thin devuser/devpass@//localhost:1521/FREEPDB1
+```
+
+### REST-Enable DEVUSER for ORDS
+
+Once connected as `DEVUSER` to `FREEPDB1`, run this at the `SQL>` prompt:
+
+```sql
+BEGIN
+  ORDS.ENABLE_SCHEMA(
+    p_enabled             => TRUE,
+    p_url_mapping_type    => 'BASE_PATH',
+    p_url_mapping_pattern => 'dev',
+    p_auto_rest_auth      => TRUE
+  );
+
+  COMMIT;
+END;
+/
+```
+
+Important:
+
+- Use `p_enabled`, not `p_enable`.
+- Use `dev` for the URL mapping pattern.
+- The project `.env` value should be `ORDS_SCHEMA_PATH=/dev`.
+- The Database Actions sign-in **Path** value should be `dev`, without the slash.
+
+Expected result:
+
+```text
+PL/SQL procedure successfully completed.
+```
+
+### Restart ORDS After Schema Enablement
+
+A restart is not always required for schema enablement, but it is useful during local setup.
+
+Stop ORDS in the ORDS PowerShell window:
+
+```text
+Ctrl + C
+```
+
+Start it again:
+
+```powershell
+cd C:\oracle\ords
+.\bin\ords.exe serve
+```
+
+### Open Oracle Database Actions / SQL Developer Web
+
+Direct schema URL:
+
+```text
+http://localhost:8080/ords/dev/_sdw/
+```
+
+Generic Database Actions URL:
+
+```text
+http://localhost:8080/ords/sql-developer
+```
+
+If using the generic URL, sign in with:
+
+```text
+Username: devuser
+Password: devpass
+Advanced > Path: dev
+```
+
+Use:
+
+```text
+dev
+```
+
+Do not use:
+
+```text
+/dev
+```
+
+### Flask App Integration
+
+The Flask app reads ORDS settings from `oracle_config.py`, which reads the project `.env`.
+
+Relevant `.env` values:
+
+```env
+ORDS_BASE_URL=http://localhost:8080/ords
+ORDS_SCHEMA_PATH=/dev
+ORDS_DATABASE_ACTIONS_PATH=/sql-developer
+```
+
+The Flask app can build:
+
+```text
+ORDS schema URL:
+http://localhost:8080/ords/dev
+
+Oracle Database Actions URL:
+http://localhost:8080/ords/sql-developer
+```
+
+The Oracle AI Flask view should expose:
+
+```text
+http://127.0.0.1:5000/oracle-ai/sql-developer
+```
+
+The ORDS status check route should expose:
+
+```text
+http://127.0.0.1:5000/oracle-ai/ords/status
+```
+
+The SQL Developer Web view should open Database Actions in a new tab instead of using an iframe.
+
+Reason:
+
+```text
+ORDS returns X-Frame-Options: SAMEORIGIN
+```
+
+Because Flask runs on port `5000` and ORDS runs on port `8080`, the browser treats them as different origins.
+
+---
+
 
 ## Custom Logger
 
@@ -439,7 +708,7 @@ Purpose:
 - Loads the project `.env`.
 - Exposes a typed `OracleConfig` object.
 - Provides a safe config summary that excludes the password.
-- Builds useful derived values such as ORDS URLs.
+- Builds useful derived values such as ORDS schema URLs and Database Actions URLs.
 
 Typical usage:
 
@@ -450,7 +719,9 @@ config = get_oracle_config()
 
 print(config.oracle_user)
 print(config.oracle_dsn)
+print(config.ords_schema_url)
 print(config.ords_colours_url)
+print(config.ords_database_actions_url)
 ```
 
 ---
@@ -986,6 +1257,10 @@ AI result explanation: working
 Option 2 test script: working
 SQLcl MCP docs: created
 Recreate-from-Git docs: created
+ORDS install detected: working
+ORDS local server on port 8080: working
+ORDS DEVUSER schema enablement: working
+Oracle Database Actions / SQL Developer Web setup: in progress
 ```
 
 ---
@@ -996,5 +1271,6 @@ Recreate-from-Git docs: created
 2. Log every question, generated SQL, command type, result count, and error.
 3. Add provider classes for Claude, Gemini, and Grok.
 4. Add Flask routes for asking questions from a browser.
-5. Add read-only and approval-required safety modes.
+5. Add Flask SQL Developer Web launch page for ORDS Database Actions.
+6. Add read-only and approval-required safety modes.
 6. Save Oracle Data Modeler DDL under `database_design/ddl`.
