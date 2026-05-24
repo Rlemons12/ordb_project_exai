@@ -1,0 +1,38 @@
+{% set safe_container_count = container_count | default(1) | int %}
+
+<section class="template-container-grid template-container-grid-{{ safe_container_count }}">
+    {% for slot_index in range(safe_container_count) %}
+        {% set slot = content_slots[slot_index] if content_slots is defined and content_slots|length > slot_index else {} %}
+
+        <section
+            class="
+                template-container
+                template-container-slot-{{ slot_index + 1 }}
+                {{ slot.class | default('') }}
+            "
+        >
+            {% if slot.show_header | default(true) %}
+                {% if slot.title is defined and slot.title %}
+                    <div class="template-container-header">
+                        <h2>{{ slot.title }}</h2>
+
+                        {% if slot.subtitle is defined and slot.subtitle %}
+                            <p>{{ slot.subtitle }}</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            <div class="template-container-body">
+                {% if slot.template is defined and slot.template %}
+                    {% include slot.template %}
+                {% else %}
+                    <div class="template-container-empty">
+                        <strong>Empty Container {{ slot_index + 1 }}</strong>
+                        <span>No partial was assigned to this container slot.</span>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+    {% endfor %}
+</section>
