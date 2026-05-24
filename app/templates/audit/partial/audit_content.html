@@ -1,0 +1,124 @@
+<section class="oracle-content-grid">
+    <article class="oracle-content-card oracle-full-width">
+        <div class="oracle-content-card-header">
+            <div>
+                <p class="oracle-main-eyebrow">AI Request Audit</p>
+                <h2>Recent AI Requests</h2>
+                <p class="muted">
+                    Review generated SQL, execution status, row count, and recent request metadata.
+                </p>
+            </div>
+
+            <span class="status-pill status-warning">
+                {{ execution_mode | default("Demo Full Access") }}
+            </span>
+        </div>
+    </article>
+
+    {% if audit_error %}
+        <article class="oracle-content-card oracle-full-width">
+            <h2>Audit Load Error</h2>
+
+            <p class="text-danger">
+                {{ audit_error }}
+            </p>
+        </article>
+    {% elif audit_rows and audit_rows|length > 0 %}
+        <article class="oracle-content-card oracle-full-width">
+            <div class="oracle-table-wrapper">
+                <table class="oracle-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Created</th>
+                            <th>Request ID</th>
+                            <th>Provider</th>
+                            <th>Model</th>
+                            <th>Command</th>
+                            <th>Success</th>
+                            <th>Rows</th>
+                            <th>Question</th>
+                            <th>Generated SQL</th>
+                            <th>Error</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for row in audit_rows %}
+                            <tr>
+                                <td>{{ row.id }}</td>
+
+                                <td>
+                                    {{ row.created_at }}
+                                </td>
+
+                                <td class="monospace">
+                                    {{ row.request_id }}
+                                </td>
+
+                                <td>
+                                    {{ row.ai_provider or "-" }}
+                                </td>
+
+                                <td>
+                                    {{ row.ai_model or "-" }}
+                                </td>
+
+                                <td>
+                                    {% if row.sql_command_type %}
+                                        <span class="status-pill status-info">
+                                            {{ row.sql_command_type }}
+                                        </span>
+                                    {% else %}
+                                        <span class="muted">-</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if row.execution_success == 1 %}
+                                        <span class="status-pill status-good">
+                                            Success
+                                        </span>
+                                    {% elif row.execution_success == 0 %}
+                                        <span class="status-pill status-bad">
+                                            Failed
+                                        </span>
+                                    {% else %}
+                                        <span class="status-pill status-unknown">
+                                            Pending
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {{ row.row_count if row.row_count is not none else "-" }}
+                                </td>
+
+                                <td class="preview-cell">
+                                    {{ row.question_preview or "-" }}
+                                </td>
+
+                                <td class="preview-cell monospace">
+                                    {{ row.generated_sql_preview or "-" }}
+                                </td>
+
+                                <td class="preview-cell text-danger">
+                                    {{ row.error_preview or "" }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    {% else %}
+        <article class="oracle-content-card oracle-full-width">
+            <h2>No Audit Records Yet</h2>
+
+            <p class="muted">
+                No rows were returned from AI_REQUEST_AUDIT. Ask the Oracle AI chat a question,
+                then return to this audit view.
+            </p>
+        </article>
+    {% endif %}
+</section>
