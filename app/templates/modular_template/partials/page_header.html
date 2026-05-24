@@ -1,25 +1,29 @@
 <header class="oracle-main-header">
     <div class="oracle-main-header-text">
         <p class="oracle-main-eyebrow">
-            {% block eyebrow %}
-                {{ page_eyebrow | default("Oracle AI Demo") }}
-            {% endblock %}
+            {{ project_name | default("ordb_project_exai") }}
         </p>
 
         <h1>
-            {% block page_heading %}
-                {{ page_heading | default(page_title | default("Oracle AI Demo")) }}
-            {% endblock %}
+            {{ page_heading | default("Oracle AI") }}
         </h1>
 
         <p class="oracle-main-subtitle">
-            {% block page_subtitle %}
-                {{ page_subtitle | default("AI-assisted Oracle database experimentation.") }}
-            {% endblock %}
+            {{ page_subtitle | default("Oracle AI demo console.") }}
         </p>
     </div>
 
-    <div class="oracle-main-header-actions">
-        {% block page_actions %}{% endblock %}
+    <div class="oracle-main-status-card">
+        <span class="exai-status-dot" id="health-dot"></span>
+
+        <div>
+            <strong id="health-title">
+                {{ health_title | default("Checking") }}
+            </strong>
+
+            <small id="health-detail">
+                {{ health_detail | default("Waiting for service status...") }}
+            </small>
+        </div>
     </div>
 </header>
