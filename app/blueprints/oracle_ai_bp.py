@@ -160,6 +160,78 @@ def _probe_http_url(url: str, timeout_seconds: float = 3.0) -> dict[str, Any]:
         result["error"] = str(exc)
         return result
 
+@oracle_ai_bp.route("/partials/home", methods=["GET"])
+def oracle_ai_home_partial():
+    """
+    Return only the home content area for same-page content swapping.
+    """
+    logger.info("Rendering Oracle AI home partial.")
+
+    return render_template(
+        "index/partial/home_content.html",
+        chat_url="/oracle-ai/chat",
+        audit_url="/oracle-ai/audit",
+        schema_summary_url="/oracle-ai/schema-summary",
+        health_url="/oracle-ai/health",
+        execution_mode="Demo Full Access",
+    )
+
+
+@oracle_ai_bp.route("/partials/chat", methods=["GET"])
+def oracle_ai_chat_partial():
+    """
+    Return only the chat content area for same-page content swapping.
+    """
+    logger.info("Rendering Oracle AI chat partial.")
+
+    return render_template(
+        "oracle_ai_chat/partial/chat_content.html",
+    )
+
+
+@oracle_ai_bp.route("/partials/audit", methods=["GET"])
+def oracle_ai_audit_partial():
+    """
+    Return only the AI audit content area for same-page content swapping.
+
+    This route is used by the modular sidebar/content router.
+    It does not return the full page shell.
+    """
+    logger.info("Rendering Oracle AI audit partial.")
+
+    try:
+        audit_service = OracleAIAuditService()
+        result = audit_service.list_recent_audit_records(max_rows=25)
+
+        if not result.success:
+            logger.warning(
+                "Failed to load AI audit records for partial. error=%s",
+                result.error,
+            )
+
+            return render_template(
+                "audit/partial/audit_content.html",
+                audit_rows=[],
+                audit_error=result.error or "Failed to load audit records.",
+                execution_mode="Demo Full Access",
+            )
+
+        return render_template(
+            "audit/partial/audit_content.html",
+            audit_rows=result.rows,
+            audit_error=None,
+            execution_mode="Demo Full Access",
+        )
+
+    except Exception as exc:
+        logger.exception("Failed to render Oracle AI audit partial.")
+
+        return render_template(
+            "audit/partial/audit_content.html",
+            audit_rows=[],
+            audit_error=str(exc),
+            execution_mode="Demo Full Access",
+        )
 
 @oracle_ai_bp.route("/", methods=["GET"])
 def oracle_ai_index_page():
