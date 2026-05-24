@@ -1,61 +1,90 @@
-<div class="oracle-sidebar-brand">
-    <div class="oracle-sidebar-logo">
-        AI
+<div class="oracle-sidebar">
+    <div class="oracle-sidebar-brand">
+        <div class="oracle-sidebar-logo">
+            {{ sidebar_logo_text | default("AI") }}
+        </div>
+
+        <div class="oracle-sidebar-brand-text">
+            <h2>{{ sidebar_title | default("Oracle AI") }}</h2>
+            <p>{{ sidebar_subtitle | default("Demo Console") }}</p>
+        </div>
     </div>
 
-    <div class="oracle-sidebar-brand-text">
-        <h2>Oracle AI</h2>
-        <p>Demo Console</p>
+    <button
+        id="sidebar-collapse-button"
+        class="sidebar-collapse-button"
+        type="button"
+        aria-controls="sidebar-container"
+        aria-expanded="true"
+        title="Collapse sidebar"
+    >
+        <span class="sidebar-collapse-icon" aria-hidden="true">«</span>
+        <span class="sidebar-collapse-label">Collapse</span>
+    </button>
+
+    <nav class="oracle-sidebar-nav" aria-label="Oracle AI navigation links">
+        <a
+            class="oracle-sidebar-link"
+            href="{{ home_url | default('/oracle-ai/') }}"
+            data-content-url="{{ home_partial_url | default('/oracle-ai/partials/home') }}"
+            data-page-title="Oracle AI Console"
+            {% if active_page | default('home') == "home" %}
+                aria-current="page"
+            {% endif %}
+        >
+            <span class="oracle-sidebar-link-title" data-short-label="H">Home</span>
+            <span class="oracle-sidebar-link-subtitle">Oracle AI console</span>
+        </a>
+
+        <a
+            class="oracle-sidebar-link"
+            href="{{ chat_url | default('/oracle-ai/chat') }}"
+            data-content-url="{{ chat_partial_url | default('/oracle-ai/partials/chat') }}"
+            data-page-title="Oracle AI Chat"
+            {% if active_page | default('home') == "chat" %}
+                aria-current="page"
+            {% endif %}
+        >
+            <span class="oracle-sidebar-link-title" data-short-label="C">Chat</span>
+            <span class="oracle-sidebar-link-subtitle">Ask database questions</span>
+        </a>
+
+        <a
+            class="oracle-sidebar-link"
+            href="{{ audit_url | default('/oracle-ai/audit') }}"
+            data-content-url="{{ audit_partial_url | default('/oracle-ai/partials/audit') }}"
+            data-page-title="AI Request Audit"
+            {% if active_page | default('home') == "audit" %}
+                aria-current="page"
+            {% endif %}
+        >
+            <span class="oracle-sidebar-link-title" data-short-label="A">AI Request Audit</span>
+            <span class="oracle-sidebar-link-subtitle">Review generated SQL</span>
+        </a>
+
+        <a
+            class="oracle-sidebar-link"
+            href="{{ schema_summary_url | default('/oracle-ai/schema-summary') }}"
+            target="_blank"
+            rel="noopener"
+        >
+            <span class="oracle-sidebar-link-title" data-short-label="S">Schema Summary</span>
+            <span class="oracle-sidebar-link-subtitle">View schema JSON</span>
+        </a>
+
+        <a
+            class="oracle-sidebar-link"
+            href="{{ health_url | default('/oracle-ai/health') }}"
+            target="_blank"
+            rel="noopener"
+        >
+            <span class="oracle-sidebar-link-title" data-short-label="✓">Health</span>
+            <span class="oracle-sidebar-link-subtitle">Check blueprint status</span>
+        </a>
+    </nav>
+
+    <div class="oracle-sidebar-footer">
+        <span>Execution Mode</span>
+        <strong>{{ execution_mode | default("Demo Full Access") }}</strong>
     </div>
-</div>
-
-<nav class="oracle-sidebar-nav">
-    <a
-        class="oracle-sidebar-link"
-        href="{{ home_url | default('/') }}"
-    >
-        <span class="oracle-sidebar-link-title">Home</span>
-        <span class="oracle-sidebar-link-subtitle">Oracle AI console</span>
-    </a>
-
-    <a
-        class="oracle-sidebar-link"
-        href="{{ chat_url | default('/oracle-ai/chat') }}"
-    >
-        <span class="oracle-sidebar-link-title">Chat</span>
-        <span class="oracle-sidebar-link-subtitle">Ask database questions</span>
-    </a>
-
-    <a
-        class="oracle-sidebar-link"
-        href="{{ audit_url | default('/oracle-ai/audit') }}"
-    >
-        <span class="oracle-sidebar-link-title">AI Request Audit</span>
-        <span class="oracle-sidebar-link-subtitle">Review generated SQL</span>
-    </a>
-
-    <a
-        class="oracle-sidebar-link"
-        href="{{ schema_summary_url | default('/oracle-ai/schema-summary') }}"
-        target="_blank"
-        rel="noopener"
-    >
-        <span class="oracle-sidebar-link-title">Schema Summary</span>
-        <span class="oracle-sidebar-link-subtitle">View schema JSON</span>
-    </a>
-
-    <a
-        class="oracle-sidebar-link"
-        href="{{ health_url | default('/oracle-ai/health') }}"
-        target="_blank"
-        rel="noopener"
-    >
-        <span class="oracle-sidebar-link-title">Health</span>
-        <span class="oracle-sidebar-link-subtitle">Check blueprint status</span>
-    </a>
-</nav>
-
-<div class="oracle-sidebar-footer">
-    <span>Execution Mode</span>
-    <strong>{{ execution_mode | default("Demo Full Access") }}</strong>
 </div>
