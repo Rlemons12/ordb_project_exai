@@ -828,6 +828,124 @@ def oracle_ai_js(filename: str):
     """
     return send_from_directory(JS_DIR, filename)
 
+@oracle_ai_bp.route("/partials/schema", methods=["GET"])
+def oracle_ai_schema_partial():
+    """
+    Return only the schema summary content area for same-page content swapping.
+
+    This route is used by the modular sidebar/content router.
+    It does not return the full page shell.
+    """
+    logger.info("Rendering Oracle AI schema summary partial.")
+
+    try:
+        config = get_oracle_config()
+        schema_owner = getattr(config, "oracle_user", None) or "DEVUSER"
+
+        schema_service = OracleSchemaService()
+
+        schema_summary = schema_service.build_schema_summary(
+            owner=schema_owner,
+            max_tables=50,
+            include_sample_rows=True,
+            sample_row_count=3,
+        )
+
+        schema_error = None
+
+        if not schema_summary.get("success"):
+            schema_error = schema_summary.get("error") or "Schema summary failed."
+
+        return render_template(
+            "schema/partial/schema_content.html",
+            schema_owner=schema_owner,
+            schema_summary=schema_summary,
+            schema_error=schema_error,
+            execution_mode="Demo Full Access",
+        )
+
+    except Exception as exc:
+        logger.exception("Failed to render Oracle AI schema summary partial.")
+
+        return render_template(
+            "schema/partial/schema_content.html",
+            schema_owner="UNKNOWN",
+            schema_summary={},
+            schema_error=str(exc),
+            execution_mode="Demo Full Access",
+        )
+
+@oracle_ai_bp.route("/schema-view", methods=["GET"])
+def oracle_ai_schema_view_page():
+    """
+    Render the full schema view page using the modular base template.
+    """
+    logger.info("Rendering Oracle AI schema view page.")
+
+    try:
+        config = get_oracle_config()
+        schema_owner = getattr(config, "oracle_user", None) or "DEVUSER"
+
+        schema_service = OracleSchemaService()
+
+        schema_summary = schema_service.build_schema_summary(
+            owner=schema_owner,
+            max_tables=50,
+            include_sample_rows=True,
+            sample_row_count=3,
+        )
+
+        schema_error = None
+
+        if not schema_summary.get("success"):
+            schema_error = schema_summary.get("error") or "Schema summary failed."
+
+    except Exception as exc:
+        logger.exception("Failed to render Oracle AI schema view page.")
+
+        schema_owner = "UNKNOWN"
+        schema_summary = {}
+        schema_error = str(exc)
+
+    return render_template(
+        "schema/schema_view.html",
+        page_title="Oracle Schema Summary",
+        page_heading="Oracle Schema Summary",
+        page_subtitle="Review the Oracle schema context available to AI SQL generation.",
+        project_name="ordb_project_exai",
+
+        theme_class="theme-oracle-dark",
+        theme_name="theme-oracle-dark",
+
+        base_css_url="/oracle-ai/assets/css/base.css",
+        theme_css_url="/oracle-ai/assets/css/themes/theme-oracle-dark.css",
+        layout_css_url="/oracle-ai/assets/css/oracle_ai_layout.css",
+
+        home_url="/oracle-ai/",
+        chat_url="/oracle-ai/chat",
+        audit_url="/oracle-ai/audit",
+        schema_view_url="/oracle-ai/schema-view",
+        schema_partial_url="/oracle-ai/partials/schema",
+        schema_summary_url="/oracle-ai/schema-summary",
+        health_url="/oracle-ai/health",
+
+        home_partial_url="/oracle-ai/partials/home",
+        chat_partial_url="/oracle-ai/partials/chat",
+        audit_partial_url="/oracle-ai/partials/audit",
+
+        modular_router_js_url="/oracle-ai/assets/js/modular_template/modular_content_router.js",
+        sidebar_toggle_js_url="/oracle-ai/assets/js/modular_template/sidebar_toggle.js",
+
+        sidebar_logo_text="AI",
+        sidebar_title="Oracle AI",
+        sidebar_subtitle="Demo Console",
+        execution_mode="Demo Full Access",
+        active_page="schema",
+
+        schema_owner=schema_owner,
+        schema_summary=schema_summary,
+        schema_error=schema_error,
+    )
 
 def register_oracle_ai_blueprint(app):
     """
