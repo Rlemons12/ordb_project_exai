@@ -64,12 +64,25 @@
 
         <a
             class="oracle-sidebar-link"
+            href="{{ schema_view_url | default('/oracle-ai/schema-view') }}"
+            data-content-url="{{ schema_partial_url | default('/oracle-ai/partials/schema') }}"
+            data-page-title="Oracle Schema Summary"
+            {% if active_page | default('home') == "schema" %}
+                aria-current="page"
+            {% endif %}
+        >
+            <span class="oracle-sidebar-link-title" data-short-label="S">Schema Summary</span>
+            <span class="oracle-sidebar-link-subtitle">View schema context</span>
+        </a>
+
+        <a
+            class="oracle-sidebar-link"
             href="{{ schema_summary_url | default('/oracle-ai/schema-summary') }}"
             target="_blank"
             rel="noopener"
         >
-            <span class="oracle-sidebar-link-title" data-short-label="S">Schema Summary</span>
-            <span class="oracle-sidebar-link-subtitle">View schema JSON</span>
+            <span class="oracle-sidebar-link-title" data-short-label="J">Schema JSON</span>
+            <span class="oracle-sidebar-link-subtitle">Open raw schema JSON</span>
         </a>
 
         <a
