@@ -87,6 +87,16 @@
 
         <a
             class="oracle-sidebar-link"
+            href="{{ ords_database_actions_url | default('http://localhost:8080/ords/sql-developer') }}"
+            target="_blank"
+            rel="noopener"
+        >
+            <span class="oracle-sidebar-link-title" data-short-label="SQL">SQL Developer</span>
+            <span class="oracle-sidebar-link-subtitle">Open Database Actions</span>
+        </a>
+
+        <a
+            class="oracle-sidebar-link"
             href="{{ health_url | default('/oracle-ai/health') }}"
             target="_blank"
             rel="noopener"
