@@ -1,0 +1,434 @@
+/* ============================================================
+   Oracle AI Chat Page
+   File: app/css/pages/oracle_ai_chat.css
+   Purpose:
+   - Keep Ask Oracle on the left
+   - Keep Answer on the right
+   - Keep this styling separate from base.css
+   ============================================================ */
+
+
+/* ------------------------------------------------------------
+   Main two-column layout
+   ------------------------------------------------------------ */
+
+.exai-layout,
+.exai-oracle-qa-layout {
+    display: grid;
+    grid-template-columns: minmax(460px, 0.95fr) minmax(520px, 1.05fr);
+    gap: 18px;
+    align-items: stretch;
+    width: 100%;
+    margin-top: 16px;
+}
+
+
+/* ------------------------------------------------------------
+   Shared card styling
+   ------------------------------------------------------------ */
+
+.exai-card {
+    background: #101010;
+    border: 1px solid #2b2b2b;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.exai-chat-card,
+.exai-answer-card {
+    min-height: 440px;
+}
+
+
+/* ------------------------------------------------------------
+   Card headers
+   ------------------------------------------------------------ */
+
+.exai-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #242424;
+}
+
+.exai-card-header h2 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.exai-muted {
+    color: #a8a8a8;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+
+/* ------------------------------------------------------------
+   Ask Oracle form
+   ------------------------------------------------------------ */
+
+.exai-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.exai-form label {
+    color: #f2f2f2;
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+.exai-form textarea,
+.exai-form input[type="number"] {
+    width: 100%;
+    background: #050505;
+    color: #ffffff;
+    border: 1px solid #3a3a3a;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font: inherit;
+    outline: none;
+}
+
+.exai-form textarea {
+    min-height: 175px;
+    resize: vertical;
+    line-height: 1.45;
+}
+
+.exai-form textarea:focus,
+.exai-form input[type="number"]:focus {
+    border-color: #ffc857;
+    box-shadow: 0 0 0 2px rgba(255, 200, 87, 0.18);
+}
+
+
+/* ------------------------------------------------------------
+   Options area
+   ------------------------------------------------------------ */
+
+.exai-options {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.exai-options label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.exai-checkbox {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center;
+    gap: 8px;
+    color: #f2f2f2;
+}
+
+.exai-checkbox input {
+    width: auto;
+    margin: 0;
+}
+
+
+/* ------------------------------------------------------------
+   Buttons
+   ------------------------------------------------------------ */
+
+.exai-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.exai-primary-button,
+.exai-secondary-button {
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease,
+        transform 0.08s ease;
+}
+
+.exai-primary-button {
+    background: #ffc857;
+    color: #000000;
+    border: 1px solid #ffc857;
+}
+
+.exai-primary-button:hover {
+    background: #ffd77a;
+    border-color: #ffd77a;
+}
+
+.exai-secondary-button {
+    background: #181818;
+    color: #ffffff;
+    border: 1px solid #3a3a3a;
+}
+
+.exai-secondary-button:hover {
+    background: #242424;
+    border-color: #555555;
+}
+
+.exai-primary-button:active,
+.exai-secondary-button:active {
+    transform: translateY(1px);
+}
+
+.exai-primary-button:disabled,
+.exai-secondary-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+
+/* ------------------------------------------------------------
+   Loading banner
+   ------------------------------------------------------------ */
+
+.exai-loading {
+    margin-top: 14px;
+    border: 1px solid #ffc857;
+    background: rgba(255, 200, 87, 0.08);
+    color: #ffc857;
+    border-radius: 12px;
+    padding: 11px 13px;
+    font-size: 0.92rem;
+    line-height: 1.4;
+}
+
+.is-hidden {
+    display: none !important;
+}
+
+
+/* ------------------------------------------------------------
+   Answer panel
+   ------------------------------------------------------------ */
+
+.exai-answer-card {
+    display: flex;
+    flex-direction: column;
+}
+
+#answer-output,
+.exai-answer-output {
+    flex: 1;
+    min-height: 350px;
+    background: #050505;
+    color: #ffffff;
+    border: 1px solid #3a3a3a;
+    border-radius: 12px;
+    padding: 15px;
+    overflow: auto;
+    line-height: 1.5;
+}
+
+.exai-answer-empty {
+    color: #d0d0d0;
+}
+
+
+/* ------------------------------------------------------------
+   Answer content formatting
+   These help once JavaScript starts inserting SQL/results/explanation.
+   ------------------------------------------------------------ */
+
+#answer-output h1,
+#answer-output h2,
+#answer-output h3,
+.exai-answer-output h1,
+.exai-answer-output h2,
+.exai-answer-output h3 {
+    color: #ffffff;
+    margin-top: 0;
+}
+
+#answer-output p,
+.exai-answer-output p {
+    margin: 0 0 12px 0;
+}
+
+#answer-output pre,
+.exai-answer-output pre {
+    background: #0d0d0d;
+    border: 1px solid #2d2d2d;
+    border-radius: 10px;
+    padding: 12px;
+    overflow: auto;
+    color: #f5f5f5;
+}
+
+#answer-output code,
+.exai-answer-output code {
+    font-family: Consolas, Monaco, "Courier New", monospace;
+    font-size: 0.92rem;
+}
+
+#answer-output table,
+.exai-answer-output table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    background: #080808;
+    border: 1px solid #2d2d2d;
+}
+
+#answer-output th,
+#answer-output td,
+.exai-answer-output th,
+.exai-answer-output td {
+    border: 1px solid #2d2d2d;
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: top;
+}
+
+#answer-output th,
+.exai-answer-output th {
+    background: #171717;
+    color: #ffc857;
+    font-weight: 700;
+}
+
+#answer-output tr:nth-child(even),
+.exai-answer-output tr:nth-child(even) {
+    background: #0f0f0f;
+}
+
+
+/* ------------------------------------------------------------
+   Optional page header support
+   Use this only if your template has a header section above the cards.
+   ------------------------------------------------------------ */
+
+.exai-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 16px;
+    padding: 18px;
+    background: #101010;
+    border: 1px solid #2b2b2b;
+    border-radius: 16px;
+}
+
+.exai-page-header h1 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 1.6rem;
+}
+
+.exai-page-header p {
+    margin: 6px 0 0 0;
+    color: #cfcfcf;
+}
+
+.exai-kicker {
+    margin: 0 0 6px 0 !important;
+    color: #ffc857 !important;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.exai-status-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 190px;
+    background: #050505;
+    border: 1px solid #2b2b2b;
+    border-radius: 12px;
+    padding: 10px 12px;
+}
+
+.exai-status-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #ffc857;
+    box-shadow: 0 0 10px rgba(255, 200, 87, 0.65);
+}
+
+.exai-status-card strong {
+    display: block;
+    color: #ffffff;
+}
+
+.exai-status-card small {
+    display: block;
+    color: #a8a8a8;
+}
+
+
+/* ------------------------------------------------------------
+   Responsive layout
+   Stack Ask Oracle above Answer on smaller screens.
+   ------------------------------------------------------------ */
+
+@media (max-width: 1150px) {
+    .exai-layout,
+    .exai-oracle-qa-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .exai-chat-card,
+    .exai-answer-card {
+        min-height: auto;
+    }
+
+    #answer-output,
+    .exai-answer-output {
+        min-height: 280px;
+    }
+}
+
+@media (max-width: 700px) {
+    .exai-card {
+        padding: 14px;
+        border-radius: 12px;
+    }
+
+    .exai-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .exai-actions {
+        flex-direction: column;
+    }
+
+    .exai-primary-button,
+    .exai-secondary-button {
+        width: 100%;
+    }
+
+    .exai-page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .exai-status-card {
+        width: 100%;
+    }
+}
