@@ -1,4 +1,4 @@
-<section class="exai-layout">
+<section class="exai-layout exai-oracle-qa-layout">
     <section class="exai-card exai-chat-card">
         <div class="exai-card-header">
             <h2>Ask Oracle</h2>
@@ -18,7 +18,7 @@
             <textarea
                 id="question"
                 name="question"
-                rows="4"
+                rows="8"
                 placeholder="Example: What colours are in the database? Show the name, abbreviation, and hex code."
             >What colours are in the database? Show the name, abbreviation, and hex code.</textarea>
 
@@ -85,9 +85,8 @@
             <span id="request-id" class="exai-muted"></span>
         </div>
 
-        <div id="answer-output" class="exai-answer-empty">
+        <div id="answer-output" class="exai-answer-output exai-answer-empty">
             Ask a question to see the generated SQL, rows, and explanation.
         </div>
     </section>
 </section>
-
