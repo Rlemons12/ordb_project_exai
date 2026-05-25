@@ -1,5 +1,20 @@
 {% extends "modular_template/base.html" %}
 
+{% block extra_css %}
+{{ super() }}
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/oracle_ai_chat/oracle_ai_chat.css') }}?v=oracle_ai_chat_1"
+>
+{% endblock %}
+
 {% block content_container %}
     {% include "oracle_ai_chat/partial/chat_content.html" %}
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script
+    src="{{ url_for('static', filename='js/oracle_ai_chat/oracle_ai_chat.js') }}?v=oracle_ai_chat_1"
+></script>
 {% endblock %}
