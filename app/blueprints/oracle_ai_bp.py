@@ -280,26 +280,20 @@ def oracle_ai_index_page():
 @oracle_ai_bp.route("/sql-developer", methods=["GET"])
 def oracle_ai_sql_developer_page():
     """
-    Render the Oracle SQL Developer Web / Database Actions launch page.
+    Render the Oracle SQL Developer / ORDS Database Actions page.
 
-    ORDS Database Actions is intentionally opened in a new tab/window instead
-    of being embedded in an iframe. The local ORDS response includes
-    X-Frame-Options: SAMEORIGIN, and the Flask app runs on a different port.
+    This page uses the modular base template and loads only SQL Developer
+    content into the content container.
     """
-    logger.info(
-        "Rendering Oracle SQL Developer Web view. ords_base_url=%s ords_schema_url=%s database_actions_url=%s",
-        ORDS_BASE_URL,
-        ORDS_SCHEMA_URL,
-        ORDS_DATABASE_ACTIONS_URL,
-    )
+    logger.info("Rendering Oracle SQL Developer page.")
 
     return render_template(
         "modular_template/base.html",
-        page_title="Oracle AI Console",
-        page_heading="Oracle AI Console",
+        page_title="Oracle SQL Developer",
+        page_heading="Oracle SQL Developer",
         page_subtitle=(
-            "A reusable Oracle AI interface with shared layout, sidebar navigation, "
-            "theme support, and modular page containers."
+            "Open Oracle Database Actions, check ORDS status, and review "
+            "the configured ORDS connection details."
         ),
         project_name="ordb_project_exai",
 
@@ -313,103 +307,33 @@ def oracle_ai_sql_developer_page():
         home_url="/oracle-ai/",
         chat_url="/oracle-ai/chat",
         audit_url="/oracle-ai/audit",
+        schema_view_url="/oracle-ai/schema-view",
+        schema_partial_url="/oracle-ai/partials/schema",
+        schema_summary_url="/oracle-ai/schema-summary",
+        health_url="/oracle-ai/health",
+        sql_developer_view_url="/oracle-ai/sql-developer",
 
         home_partial_url="/oracle-ai/partials/home",
         chat_partial_url="/oracle-ai/partials/chat",
         audit_partial_url="/oracle-ai/partials/audit",
 
-        schema_summary_url="/oracle-ai/schema-summary",
-        health_url="/oracle-ai/health",
+        ords_status_url="/oracle-ai/ords/status",
+        ords_base_url=ORDS_BASE_URL,
+        ords_schema_path=ORDS_SCHEMA_PATH,
+        ords_schema_url=ORDS_SCHEMA_URL,
+        ords_database_actions_url=ORDS_DATABASE_ACTIONS_URL,
 
+        modular_router_js_url="/oracle-ai/assets/js/modular_template/modular_content_router.js",
+        sidebar_toggle_js_url="/oracle-ai/assets/js/modular_template/sidebar_toggle.js",
+
+        sidebar_logo_text="AI",
+        sidebar_title="Oracle AI",
+        sidebar_subtitle="Demo Console",
         execution_mode="Demo Full Access",
-        active_page="home",
+        active_page="sql_developer",
 
-        initial_content_template="index/partials/home_content.html",
-
-        extra_js_urls=[
-            "/oracle-ai/assets/js/modular_template/modular_content_router.js",
-            "/oracle-ai/assets/js/modular_template/sidebar_toggle.js",
-        ],
+        initial_content_template="oracle_sql_developer/partial/sql_developer_content.html",
     )
-
-@oracle_ai_bp.route("/ords/status", methods=["GET"])
-def oracle_ai_ords_status():
-    """
-    Return ORDS connectivity status as JSON.
-
-    This checks ORDS from the Flask backend.
-    """
-    request_id = set_request_id()
-
-    try:
-        logger.info(
-            "ORDS status check requested. request_id=%s ords_base_url=%s ords_database_actions_url=%s",
-            request_id,
-            ORDS_BASE_URL,
-            ORDS_DATABASE_ACTIONS_URL,
-        )
-
-        base_probe = _probe_http_url(ORDS_BASE_URL)
-        database_actions_probe = _probe_http_url(ORDS_DATABASE_ACTIONS_URL)
-
-        success = bool(base_probe.get("success"))
-
-        response_payload = {
-            "success": success,
-            "service": "ords",
-            "message": (
-                "ORDS base URL is reachable."
-                if success
-                else "ORDS base URL is not reachable from the Flask backend."
-            ),
-            "request_id": request_id,
-            "ords": {
-                "base_url": ORDS_BASE_URL,
-                "schema_path": ORDS_SCHEMA_PATH,
-                "schema_url": ORDS_SCHEMA_URL,
-                "database_actions_url": ORDS_DATABASE_ACTIONS_URL,
-            },
-            "checks": {
-                "base_url": base_probe,
-                "database_actions_url": database_actions_probe,
-            },
-        }
-
-        status_code = 200 if success else 503
-
-        logger.info(
-            "ORDS status check completed. request_id=%s success=%s status_code=%s",
-            request_id,
-            success,
-            status_code,
-        )
-
-        return jsonify(response_payload), status_code
-
-    except Exception as exc:
-        logger.exception(
-            "ORDS status check route failed. request_id=%s",
-            request_id,
-        )
-
-        return jsonify(
-            {
-                "success": False,
-                "service": "ords",
-                "message": "ORDS status check failed.",
-                "error": str(exc),
-                "request_id": request_id,
-                "ords": {
-                    "base_url": ORDS_BASE_URL,
-                    "schema_path": ORDS_SCHEMA_PATH,
-                    "schema_url": ORDS_SCHEMA_URL,
-                    "database_actions_url": ORDS_DATABASE_ACTIONS_URL,
-                },
-            }
-        ), 500
-
-    finally:
-        clear_request_id()
 
 
 @oracle_ai_bp.route("/ask", methods=["POST"])
@@ -532,9 +456,31 @@ def oracle_ai_chat_page():
 
     This route uses the modular template pattern:
         - modular_template/base.html owns the sidebar, header, theme, and shell.
-        - oracle_ai_chat/oracle_ai_chat.html only fills the content container.
+        - oracle_ai_chat/oracle_ai_chat.html fills the content container.
+
+    Important:
+        - The chat JavaScript file is located at:
+              app/js/oracle_ai_chat/oracle_ai_chat.js
+
+          Therefore the browser URL must be:
+              /oracle-ai/assets/js/oracle_ai_chat/oracle_ai_chat.js
+
+        - If the page is opened with:
+              /oracle-ai/chat?question=some+question
+
+          the initial_question value is passed to the template. The updated
+          browser JavaScript can also read the question directly from the URL
+          and submit it to /oracle-ai/ask.
     """
+    from flask import request
+
     logger.info("Rendering Oracle AI chat page.")
+
+    initial_question = request.args.get("question", "").strip()
+
+    # Change this string any time you update CSS/JS and want to force the
+    # browser to stop using cached 304 versions.
+    asset_version = "oracle_ai_chat_20260525_01"
 
     return render_template(
         "oracle_ai_chat/oracle_ai_chat.html",
@@ -551,20 +497,39 @@ def oracle_ai_chat_page():
         project_name="ordb_project_exai",
 
         # ------------------------------------------------------------
+        # Initial page state
+        # ------------------------------------------------------------
+        initial_question=initial_question,
+
+        # ------------------------------------------------------------
         # Theme / CSS
         # ------------------------------------------------------------
         theme_class="theme-oracle-dark",
         theme_name="theme-oracle-dark",
-        base_css_url="/oracle-ai/assets/css/base.css",
-        theme_css_url="/oracle-ai/assets/css/themes/theme-oracle-dark.css",
-        layout_css_url="/oracle-ai/assets/css/oracle_ai_layout.css",
-        page_css_url="/oracle-ai/assets/css/oracle_ai_chat.css",
+        base_css_url=f"/oracle-ai/assets/css/base.css?v={asset_version}",
+        theme_css_url=f"/oracle-ai/assets/css/themes/theme-oracle-dark.css?v={asset_version}",
+        layout_css_url=f"/oracle-ai/assets/css/oracle_ai_layout.css?v={asset_version}",
+        page_css_url=f"/oracle-ai/assets/css/oracle_ai_chat.css?v={asset_version}",
 
         # ------------------------------------------------------------
         # JavaScript
         # ------------------------------------------------------------
-        js_url="/oracle-ai/assets/js/oracle_ai_chat.js",
-        modular_router_js_url="/oracle-ai/assets/js/modular_template/modular_content_router.js",
+        js_url=f"/oracle-ai/assets/js/oracle_ai_chat/oracle_ai_chat.js?v={asset_version}",
+        modular_router_js_url=(
+            f"/oracle-ai/assets/js/modular_template/"
+            f"modular_content_router.js?v={asset_version}"
+        ),
+        sidebar_toggle_js_url=(
+            f"/oracle-ai/assets/js/modular_template/"
+            f"sidebar_toggle.js?v={asset_version}"
+        ),
+
+        # ------------------------------------------------------------
+        # Main application endpoint URLs
+        # ------------------------------------------------------------
+        ask_url="/oracle-ai/ask",
+        schema_summary_url="/oracle-ai/schema-summary",
+        health_url="/oracle-ai/health",
 
         # ------------------------------------------------------------
         # Sidebar navigation URLs
@@ -572,8 +537,6 @@ def oracle_ai_chat_page():
         home_url="/oracle-ai/",
         chat_url="/oracle-ai/chat",
         audit_url="/oracle-ai/audit",
-        schema_summary_url="/oracle-ai/schema-summary",
-        health_url="/oracle-ai/health",
 
         # ------------------------------------------------------------
         # Partial swap URLs
@@ -798,7 +761,7 @@ def oracle_ai_health():
                 "ords_status": "/oracle-ai/ords/status",
                 "health": "/oracle-ai/health",
                 "chat_css": "/oracle-ai/assets/css/oracle_ai_chat.css",
-                "chat_js": "/oracle-ai/assets/js/oracle_ai_chat.js",
+                "chat_js": "/oracle-ai/assets/js/oracle_ai_chat/oracle_ai_chat.js",
                 "audit_css": "/oracle-ai/assets/css/oracle_ai_audit.css",
                 "audit_js": "/oracle-ai/assets/js/oracle_ai_audit.js",
                 "sql_developer_css": "/oracle-ai/assets/css/oracle_sql_developer.css",
