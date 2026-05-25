@@ -1,0 +1,120 @@
+<section class="oracle-content-grid">
+    <article class="oracle-content-card oracle-full-width">
+        <div class="oracle-content-card-header">
+            <div>
+                <p class="oracle-main-eyebrow">Schema Summary</p>
+
+                <h2>Oracle Schema View</h2>
+
+                <p class="muted">
+                    Review the schema context that can be passed to the AI SQL generator.
+                </p>
+            </div>
+
+            <span class="status-pill status-warning">
+                {{ execution_mode | default("Demo Full Access") }}
+            </span>
+        </div>
+    </article>
+
+    {% if schema_error %}
+        <article class="oracle-content-card oracle-full-width">
+            <h2>Schema Load Error</h2>
+
+            <p class="text-danger">
+                {{ schema_error }}
+            </p>
+        </article>
+
+    {% else %}
+        <article class="oracle-content-card oracle-third-width">
+            <h2>Owner</h2>
+
+            <p class="monospace">
+                {{ schema_owner }}
+            </p>
+        </article>
+
+        <article class="oracle-content-card oracle-third-width">
+            <h2>Table Count</h2>
+
+            <p>
+                <span class="status-pill status-info">
+                    {{ schema_summary.table_count | default(0) }}
+                </span>
+            </p>
+        </article>
+
+        <article class="oracle-content-card oracle-third-width">
+            <h2>Schema Status</h2>
+
+            <p>
+                {% if schema_summary.success %}
+                    <span class="status-pill status-good">Loaded</span>
+                {% else %}
+                    <span class="status-pill status-bad">Failed</span>
+                {% endif %}
+            </p>
+        </article>
+
+        {% if schema_summary.tables and schema_summary.tables|length > 0 %}
+            <article class="oracle-content-card oracle-full-width">
+                <h2>Tables</h2>
+
+                <div class="oracle-table-wrapper">
+                    <table class="oracle-table">
+                        <thead>
+                            <tr>
+                                <th>Owner</th>
+                                <th>Table</th>
+                                <th>Rows</th>
+                                <th>Columns</th>
+                                <th>Sample Rows</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for table in schema_summary.tables %}
+                                <tr>
+                                    <td class="monospace">
+                                        {{ table.owner | default(schema_owner) }}
+                                    </td>
+
+                                    <td class="monospace">
+                                        {{ table.table_name | default(table.name | default("-")) }}
+                                    </td>
+
+                                    <td>
+                                        {{ table.row_count if table.row_count is defined else "-" }}
+                                    </td>
+
+                                    <td>
+                                        {% if table.columns is defined and table.columns %}
+                                            {{ table.columns | length }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        {% if table.sample_rows is defined and table.sample_rows %}
+                                            {{ table.sample_rows | length }}
+                                        {% else %}
+                                            0
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        {% endif %}
+
+        <article class="oracle-content-card oracle-full-width">
+            <h2>Raw Schema JSON</h2>
+
+            <pre class="exai-pre">{{ schema_summary | tojson(indent=2) }}</pre>
+        </article>
+    {% endif %}
+</section>
