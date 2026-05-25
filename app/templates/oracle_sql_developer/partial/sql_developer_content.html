@@ -1,0 +1,94 @@
+<section class="oracle-content-grid">
+    <article class="oracle-content-card oracle-full-width">
+        <p class="oracle-main-eyebrow">Oracle SQL Developer</p>
+
+        <h2>Oracle SQL Developer / Database Actions</h2>
+
+        <p class="muted">
+            Use this page to open Oracle Database Actions, check ORDS status,
+            and review the configured ORDS connection details for this demo project.
+        </p>
+
+        <div class="oracle-card-actions">
+            {% if ords_database_actions_url %}
+                <a
+                    class="oracle-primary-button"
+                    href="{{ ords_database_actions_url }}"
+                    target="_blank"
+                    rel="noopener"
+                >
+                    Open Database Actions
+                </a>
+            {% endif %}
+
+            <a
+                class="oracle-secondary-button"
+                href="{{ ords_status_url | default('/oracle-ai/ords/status') }}"
+            >
+                Check ORDS Status
+            </a>
+
+            <a
+                class="oracle-link-button"
+                href="{{ schema_view_url | default('/oracle-ai/schema-view') }}"
+            >
+                View Schema
+            </a>
+        </div>
+    </article>
+
+    <article class="oracle-content-card oracle-half-width">
+        <h2>ORDS Base URL</h2>
+
+        <p class="monospace">
+            {{ ords_base_url | default("Not configured") }}
+        </p>
+    </article>
+
+    <article class="oracle-content-card oracle-half-width">
+        <h2>ORDS Schema Path</h2>
+
+        <p class="monospace">
+            {{ ords_schema_path | default("Not configured") }}
+        </p>
+    </article>
+
+    <article class="oracle-content-card oracle-half-width">
+        <h2>ORDS Schema URL</h2>
+
+        {% if ords_schema_url %}
+            <p class="monospace">
+                {{ ords_schema_url }}
+            </p>
+
+            <div class="oracle-card-actions">
+                <a
+                    class="oracle-link-button"
+                    href="{{ ords_schema_url }}"
+                    target="_blank"
+                    rel="noopener"
+                >
+                    Open Schema URL
+                </a>
+            </div>
+        {% else %}
+            <p class="muted">
+                ORDS schema URL is not configured.
+            </p>
+        {% endif %}
+    </article>
+
+    <article class="oracle-content-card oracle-half-width">
+        <h2>Execution Mode</h2>
+
+        <p>
+            <span class="status-pill status-warning">
+                {{ execution_mode | default("Demo Full Access") }}
+            </span>
+        </p>
+
+        <p class="muted">
+            This project is currently configured for demo database experimentation.
+        </p>
+    </article>
+</section>
